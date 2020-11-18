@@ -54,7 +54,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --target ${{ matrix.target }} --no-default-features --features "rustls-tls"
+          args: --target ${{ matrix.target }}
 
   test:
     name: Test Suite
