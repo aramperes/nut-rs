@@ -10,6 +10,7 @@ A [Network UPS Tools](https://github.com/networkupstools/nut) (NUT) client libra
 - Connect to `upsd`/`nut-server` using TCP
 - Login with with username and password
 - List UPS devices
+- List variables for a UPS device
 
 ## ⚠️ Safety Goggles Required ⚠️
 
@@ -26,11 +27,10 @@ Check out the `examples` directory for more advanced examples.
 use std::env;
 use std::net::ToSocketAddrs;
 
-use nut_client::{Auth, ConfigBuilder, Host};
 use nut_client::blocking::Connection;
+use nut_client::{Auth, ConfigBuilder, Host};
 
 fn main() -> nut_client::Result<()> {
-    // The TCP host:port for upsd/nut-server
     let addr = env::var("NUT_ADDR")
         .unwrap_or_else(|_| "localhost:3493".into())
         .to_socket_addrs()
@@ -38,25 +38,27 @@ fn main() -> nut_client::Result<()> {
         .next()
         .unwrap();
 
-    // Username and password (optional)
     let username = env::var("NUT_USER").ok();
     let password = env::var("NUT_PASSWORD").ok();
     let auth = username.map(|username| Auth::new(username, password));
 
-    // Build the config
     let config = ConfigBuilder::new()
         .with_host(Host::Tcp(addr))
         .with_auth(auth)
         .build();
 
-    // Open a connection and login
     let mut conn = Connection::new(config)?;
 
-    // Print a list of all UPS devices
+    // Print a list of all UPS devices and their variables
     println!("Connected UPS devices:");
-    for (id, description) in conn.list_ups()? {
-        println!("\t- ID: {}", id);
+    for (name, description) in conn.list_ups()? {
+        println!("\t- Name: {}", name);
         println!("\t  Description: {}", description);
+        println!("\t  Variables:");
+
+        for (var_name, var_val) in conn.list_vars(&name)? {
+            println!("\t\t- {} = {}", var_name, var_val);
+        }
     }
 
     Ok(())

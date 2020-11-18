@@ -7,10 +7,12 @@ use crate::{ClientError, Config, Host, NutError};
 
 /// A blocking NUT client connection.
 pub enum Connection {
+    /// A TCP connection.
     Tcp(TcpConnection),
 }
 
 impl Connection {
+    /// Initializes a connection to a NUT server (upsd).
     pub fn new(config: Config) -> crate::Result<Self> {
         match &config.host {
             Host::Tcp(socket_addr) => {
@@ -19,9 +21,17 @@ impl Connection {
         }
     }
 
+    /// Queries a list of UPS devices.
     pub fn list_ups(&mut self) -> crate::Result<Vec<(String, String)>> {
         match self {
             Self::Tcp(conn) => conn.list_ups(),
+        }
+    }
+
+    /// Queries the list of variables for a UPS device.
+    pub fn list_vars(&mut self, ups_name: &str) -> crate::Result<Vec<(String, String)>> {
+        match self {
+            Self::Tcp(conn) => conn.list_vars(ups_name),
         }
     }
 }
@@ -63,6 +73,17 @@ impl TcpConnection {
     fn list_ups(&mut self) -> crate::Result<Vec<(String, String)>> {
         Self::write_cmd(&mut self.tcp_stream, Command::List(&["UPS"]))?;
         let list = Self::read_list(&mut self.tcp_stream, &["UPS"])?;
+
+        Ok(list
+            .into_iter()
+            .map(|mut row| (row.remove(0), row.remove(0)))
+            .collect())
+    }
+
+    fn list_vars(&mut self, ups_name: &str) -> crate::Result<Vec<(String, String)>> {
+        let query = &["VAR", ups_name];
+        Self::write_cmd(&mut self.tcp_stream, Command::List(query))?;
+        let list = Self::read_list(&mut self.tcp_stream, query)?;
 
         Ok(list
             .into_iter()

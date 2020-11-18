@@ -31,6 +31,7 @@ pub struct Auth {
 }
 
 impl Auth {
+    /// Initializes authentication credentials with a username, and optionally a password.
     pub fn new(username: String, password: Option<String>) -> Self {
         Auth { username, password }
     }
@@ -54,6 +55,7 @@ pub struct Config {
 }
 
 impl Config {
+    /// Creates a connection configuration.
     pub fn new(host: Host, auth: Option<Auth>, timeout: Duration) -> Self {
         Config {
             host,
@@ -77,21 +79,26 @@ impl ConfigBuilder {
         ConfigBuilder::default()
     }
 
+    /// Sets the connection host, such as the TCP address and port.
     pub fn with_host(mut self, host: Host) -> Self {
         self.host = Some(host);
         self
     }
 
+    /// Sets the optional authentication parameters.
     pub fn with_auth(mut self, auth: Option<Auth>) -> Self {
         self.auth = auth;
         self
     }
 
+    /// Sets the network connection timeout. This may be ignored by non-network
+    /// connections, such as Unix domain sockets.
     pub fn with_timeout(mut self, timeout: Duration) -> Self {
         self.timeout = Some(timeout);
         self
     }
 
+    /// Builds the configuration with this builder.
     pub fn build(self) -> Config {
         Config::new(
             self.host.unwrap_or_default(),

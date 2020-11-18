@@ -67,6 +67,7 @@ impl Response {
                     let err_type = args.remove(0);
                     match err_type.as_str() {
                         "ACCESS-DENIED" => Err(NutError::AccessDenied.into()),
+                        "UNKNOWN-UPS" => Err(NutError::UnknownUps.into()),
                         _ => Err(NutError::Generic(format!(
                             "Server error: {} {}",
                             err_type,
