@@ -7,6 +7,7 @@
 
 pub use config::*;
 pub use error::*;
+pub use var::*;
 
 /// Blocking client implementation for NUT.
 pub mod blocking;
@@ -14,3 +15,4 @@ pub mod blocking;
 mod cmd;
 mod config;
 mod error;
+mod var;

@@ -49,15 +49,16 @@ fn main() -> nut_client::Result<()> {
 
     let mut conn = Connection::new(config)?;
 
-    // Print a list of all UPS devices and their variables
+    // Print a list of all UPS devices
     println!("Connected UPS devices:");
     for (name, description) in conn.list_ups()? {
         println!("\t- Name: {}", name);
         println!("\t  Description: {}", description);
-        println!("\t  Variables:");
 
-        for (var_name, var_val) in conn.list_vars(&name)? {
-            println!("\t\t- {} = {}", var_name, var_val);
+        // List UPS variables (key = val)
+        println!("\t  Variables:");
+        for var in conn.list_vars(&name)? {
+            println!("\t\t- {}", var);
         }
     }
 

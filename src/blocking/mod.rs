@@ -3,7 +3,7 @@ use std::io::{BufRead, BufReader, Write};
 use std::net::{SocketAddr, TcpStream};
 
 use crate::cmd::{Command, Response};
-use crate::{ClientError, Config, Host, NutError};
+use crate::{ClientError, Config, Host, NutError, Variable};
 
 /// A blocking NUT client connection.
 pub enum Connection {
@@ -29,9 +29,13 @@ impl Connection {
     }
 
     /// Queries the list of variables for a UPS device.
-    pub fn list_vars(&mut self, ups_name: &str) -> crate::Result<Vec<(String, String)>> {
+    pub fn list_vars(&mut self, ups_name: &str) -> crate::Result<Vec<Variable>> {
         match self {
-            Self::Tcp(conn) => conn.list_vars(ups_name),
+            Self::Tcp(conn) => Ok(conn
+                .list_vars(ups_name)?
+                .into_iter()
+                .map(|(key, val)| Variable::parse(key.as_str(), val))
+                .collect()),
         }
     }
 }
