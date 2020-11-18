@@ -1,8 +1,8 @@
 use std::env;
 use std::net::ToSocketAddrs;
 
-use nut_client::{Auth, ConfigBuilder, Host};
 use nut_client::blocking::Connection;
+use nut_client::{Auth, ConfigBuilder, Host};
 
 fn main() -> nut_client::Result<()> {
     let addr = env::var("NUT_ADDR")

@@ -3,7 +3,7 @@
 [![crates.io](https://img.shields.io/crates/v/nut-client.svg)](https://crates.io/crates/nut-client)
 [![Documentation](https://docs.rs/nut-client/badge.svg)](https://docs.rs/nut-client)
 [![MIT licensed](https://img.shields.io/crates/l/nut-client.svg)](./LICENSE)
-[![CI](https://github.com/aramperes/nut-client-rs/workflows/CI/badge.svg)](https://github.com/aramperes/nut-client-rs/actions?query=workflow%3ACI)
+[![CI](https://github.com/aramperes/nut-client-rs/workflows/CI/badge.svg)](https://github.com/aramperes/nut-client/actions?query=workflow%3ACI)
 
 A [Network UPS Tools](https://github.com/networkupstools/nut) (NUT) client library for Rust.
 
