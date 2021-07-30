@@ -67,7 +67,7 @@ impl TcpConnection {
 
             // Pass password and check for 'OK'
             if let Some(password) = &auth.password {
-                Self::write_cmd(&mut self.tcp_stream, Command::SetPassword(&password))?;
+                Self::write_cmd(&mut self.tcp_stream, Command::SetPassword(password))?;
                 Self::read_response(&mut self.tcp_stream)?.expect_ok()?;
             }
         }
