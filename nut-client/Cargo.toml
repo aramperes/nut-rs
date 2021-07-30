@@ -1,0 +1,21 @@
+[package]
+name = "nut-client"
+version = "0.0.4"
+authors = ["Aram Peres <aram.peres@wavy.fm>"]
+edition = "2018"
+description = "Network UPS Tools (NUT) client library"
+categories = ["network-programming"]
+keywords = ["ups", "nut"]
+repository = "https://github.com/aramperes/nut-client-rs"
+documentation = "https://docs.rs/nut-client"
+readme = "../README.md"
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+shell-words = "1.0.0"
+dotenv = { version = "0.15.0", optional = true }
+
+[features]
+env-file = ["dotenv"]
