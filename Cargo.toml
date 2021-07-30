@@ -1,4 +1,5 @@
 [workspace]
 members = [
-    "nut-client"
+    "nut-client",
+    "rupsc"
 ]
