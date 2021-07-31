@@ -1,11 +1,11 @@
 use std::io::{BufRead, BufReader, Write};
 use std::net::{SocketAddr, TcpStream};
 
-use crate::blocking::filter::ConnectionPipeline;
+use crate::blocking::stream::ConnectionStream;
 use crate::cmd::{Command, Response};
 use crate::{ClientError, Config, Host, NutError, Variable};
 
-mod filter;
+mod stream;
 
 /// A blocking NUT client connection.
 pub enum Connection {
@@ -62,7 +62,7 @@ impl Connection {
 /// A blocking TCP NUT client connection.
 pub struct TcpConnection {
     config: Config,
-    pipeline: ConnectionPipeline,
+    pipeline: ConnectionStream,
 }
 
 impl TcpConnection {
@@ -71,11 +71,11 @@ impl TcpConnection {
         let tcp_stream = TcpStream::connect_timeout(socket_addr, config.timeout)?;
         let mut connection = Self {
             config,
-            pipeline: ConnectionPipeline::Tcp(tcp_stream),
+            pipeline: ConnectionStream::Plain(tcp_stream),
         };
 
         // Initialize SSL connection
-        connection.enable_ssl()?;
+        connection = connection.enable_ssl()?;
 
         // Attempt login using `config.auth`
         connection.login()?;
@@ -84,7 +84,7 @@ impl TcpConnection {
     }
 
     #[cfg(feature = "ssl")]
-    fn enable_ssl(&mut self) -> crate::Result<()> {
+    fn enable_ssl(mut self) -> crate::Result<Self> {
         if self.config.ssl {
             // Send TLS request and check for 'OK'
             self.write_cmd(Command::StartTLS)?;
@@ -110,17 +110,12 @@ impl TcpConnection {
             let sess = rustls::ClientSession::new(&std::sync::Arc::new(config), dns_name);
 
             // Wrap and override the TCP stream
-            let tcp = self
-                .pipeline
-                .tcp()
-                .ok_or_else(|| ClientError::from(NutError::SslNotSupported))?;
-            let tls = rustls::StreamOwned::new(sess, tcp);
-            self.pipeline = ConnectionPipeline::Ssl(tls);
+            self.pipeline = self.pipeline.upgrade_ssl(sess)?;
 
             // Send a test command
             self.get_network_version()?;
         }
-        Ok(())
+        Ok(self)
     }
 
     #[cfg(not(feature = "ssl"))]
@@ -190,7 +185,7 @@ impl TcpConnection {
     }
 
     fn parse_line(
-        reader: &mut BufReader<&mut ConnectionPipeline>,
+        reader: &mut BufReader<&mut ConnectionStream>,
         debug: bool,
     ) -> crate::Result<Vec<String>> {
         let mut raw = String::new();
