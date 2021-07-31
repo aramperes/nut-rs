@@ -60,7 +60,7 @@ fn main() -> nut_client::Result<()> {
         .with_debug(false) // Turn this on for debugging network chatter
         .build();
 
-    let mut conn = Connection::new(config)?;
+    let mut conn = Connection::new(&config)?;
 
     // Print a list of all UPS devices
     println!("Connected UPS devices:");

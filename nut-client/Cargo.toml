@@ -15,7 +15,8 @@ license = "MIT"
 
 [dependencies]
 shell-words = "1.0.0"
-dotenv = { version = "0.15.0", optional = true }
+rustls = { version = "0.19", optional = true, features = ["dangerous_configuration"] }
+webpki = { version = "0.21", optional = true }
 
 [features]
-env-file = ["dotenv"]
+ssl = ["rustls", "webpki"]

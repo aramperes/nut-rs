@@ -58,16 +58,18 @@ pub struct Config {
     pub(crate) host: Host,
     pub(crate) auth: Option<Auth>,
     pub(crate) timeout: Duration,
+    pub(crate) ssl: bool,
     pub(crate) debug: bool,
 }
 
 impl Config {
     /// Creates a connection configuration.
-    pub fn new(host: Host, auth: Option<Auth>, timeout: Duration, debug: bool) -> Self {
+    pub fn new(host: Host, auth: Option<Auth>, timeout: Duration, ssl: bool, debug: bool) -> Self {
         Config {
             host,
             auth,
             timeout,
+            ssl,
             debug,
         }
     }
@@ -79,6 +81,7 @@ pub struct ConfigBuilder {
     host: Option<Host>,
     auth: Option<Auth>,
     timeout: Option<Duration>,
+    ssl: Option<bool>,
     debug: Option<bool>,
 }
 
@@ -107,6 +110,13 @@ impl ConfigBuilder {
         self
     }
 
+    /// Enables SSL on the connection.
+    #[cfg(feature = "ssl")]
+    pub fn with_ssl(mut self, ssl: bool) -> Self {
+        self.ssl = Some(ssl);
+        self
+    }
+
     /// Enables debugging network calls by printing to stderr.
     pub fn with_debug(mut self, debug: bool) -> Self {
         self.debug = Some(debug);
@@ -119,6 +129,7 @@ impl ConfigBuilder {
             self.host.unwrap_or_default(),
             self.auth,
             self.timeout.unwrap_or_else(|| Duration::from_secs(5)),
+            self.ssl.unwrap_or(false),
             self.debug.unwrap_or(false),
         )
     }
