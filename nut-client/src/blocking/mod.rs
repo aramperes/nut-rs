@@ -3,7 +3,7 @@ use std::io::{BufRead, BufReader, Write};
 use std::net::{SocketAddr, TcpStream};
 
 use crate::cmd::{Command, Response};
-use crate::{ClientError, Config, Host, NutError, Variable};
+use crate::{Config, Host, NutError, Variable};
 
 /// A blocking NUT client connection.
 pub enum Connection {
@@ -72,58 +72,76 @@ impl TcpConnection {
     fn login(&mut self) -> crate::Result<()> {
         if let Some(auth) = &self.config.auth {
             // Pass username and check for 'OK'
-            Self::write_cmd(&mut self.tcp_stream, Command::SetUsername(&auth.username))?;
-            Self::read_response(&mut self.tcp_stream)?.expect_ok()?;
+            Self::write_cmd(
+                &mut self.tcp_stream,
+                Command::SetUsername(&auth.username),
+                self.config.debug,
+            )?;
+            Self::read_response(&mut self.tcp_stream, self.config.debug)?.expect_ok()?;
 
             // Pass password and check for 'OK'
             if let Some(password) = &auth.password {
-                Self::write_cmd(&mut self.tcp_stream, Command::SetPassword(password))?;
-                Self::read_response(&mut self.tcp_stream)?.expect_ok()?;
+                Self::write_cmd(
+                    &mut self.tcp_stream,
+                    Command::SetPassword(password),
+                    self.config.debug,
+                )?;
+                Self::read_response(&mut self.tcp_stream, self.config.debug)?.expect_ok()?;
             }
         }
         Ok(())
     }
 
     fn list_ups(&mut self) -> crate::Result<Vec<(String, String)>> {
-        Self::write_cmd(&mut self.tcp_stream, Command::List(&["UPS"]))?;
-        let list = Self::read_list(&mut self.tcp_stream, &["UPS"])?;
+        Self::write_cmd(
+            &mut self.tcp_stream,
+            Command::List(&["UPS"]),
+            self.config.debug,
+        )?;
+        let list = Self::read_list(&mut self.tcp_stream, &["UPS"], self.config.debug)?;
 
-        Ok(list
-            .into_iter()
-            .map(|mut row| (row.remove(0), row.remove(0)))
-            .collect())
+        list.into_iter().map(|row| row.expect_ups()).collect()
     }
 
     fn list_vars(&mut self, ups_name: &str) -> crate::Result<Vec<(String, String)>> {
         let query = &["VAR", ups_name];
-        Self::write_cmd(&mut self.tcp_stream, Command::List(query))?;
-        let list = Self::read_list(&mut self.tcp_stream, query)?;
+        Self::write_cmd(
+            &mut self.tcp_stream,
+            Command::List(query),
+            self.config.debug,
+        )?;
+        let list = Self::read_list(&mut self.tcp_stream, query, self.config.debug)?;
 
-        Ok(list
-            .into_iter()
-            .map(|mut row| (row.remove(0), row.remove(0)))
-            .collect())
+        list.into_iter().map(|row| row.expect_var()).collect()
     }
 
     fn get_var(&mut self, ups_name: &str, variable: &str) -> crate::Result<(String, String)> {
         let query = &["VAR", ups_name, variable];
-        Self::write_cmd(&mut self.tcp_stream, Command::Get(query))?;
+        Self::write_cmd(&mut self.tcp_stream, Command::Get(query), self.config.debug)?;
 
-        let resp = Self::read_response(&mut self.tcp_stream)?;
-        let (name, value) = resp.expect_var()?;
-        Ok((name.into(), value.into()))
+        let resp = Self::read_response(&mut self.tcp_stream, self.config.debug)?;
+        resp.expect_var()
     }
 
-    fn write_cmd(stream: &mut TcpStream, line: Command) -> crate::Result<()> {
+    fn write_cmd(stream: &mut TcpStream, line: Command, debug: bool) -> crate::Result<()> {
         let line = format!("{}\n", line);
+        if debug {
+            eprint!("DEBUG -> {}", line);
+        }
         stream.write_all(line.as_bytes())?;
         stream.flush()?;
         Ok(())
     }
 
-    fn parse_line(reader: &mut BufReader<&mut TcpStream>) -> crate::Result<Vec<String>> {
+    fn parse_line(
+        reader: &mut BufReader<&mut TcpStream>,
+        debug: bool,
+    ) -> crate::Result<Vec<String>> {
         let mut raw = String::new();
         reader.read_line(&mut raw)?;
+        if debug {
+            eprint!("DEBUG <- {}", raw);
+        }
         raw = raw[..raw.len() - 1].to_string(); // Strip off \n
 
         // Parse args by splitting whitespace, minding quotes for args with multiple words
@@ -133,46 +151,35 @@ impl TcpConnection {
         Ok(args)
     }
 
-    fn read_response(stream: &mut TcpStream) -> crate::Result<Response> {
+    fn read_response(stream: &mut TcpStream, debug: bool) -> crate::Result<Response> {
         let mut reader = io::BufReader::new(stream);
-        let args = Self::parse_line(&mut reader)?;
+        let args = Self::parse_line(&mut reader, debug)?;
         Response::from_args(args)
     }
 
-    fn read_list(stream: &mut TcpStream, query: &[&str]) -> crate::Result<Vec<Vec<String>>> {
+    fn read_list(
+        stream: &mut TcpStream,
+        query: &[&str],
+        debug: bool,
+    ) -> crate::Result<Vec<Response>> {
         let mut reader = io::BufReader::new(stream);
-        let args = Self::parse_line(&mut reader)?;
+        let args = Self::parse_line(&mut reader, debug)?;
 
         Response::from_args(args)?.expect_begin_list(query)?;
-        let mut lines: Vec<Vec<String>> = Vec::new();
+        let mut lines: Vec<Response> = Vec::new();
 
         loop {
-            let mut args = Self::parse_line(&mut reader)?;
-            let resp = Response::from_args(args.clone());
+            let args = Self::parse_line(&mut reader, debug)?;
+            let resp = Response::from_args(args)?;
 
-            if let Ok(resp) = resp {
-                resp.expect_end_list(query)?;
-                break;
-            } else {
-                let err = resp.unwrap_err();
-                if let ClientError::Nut(err) = err {
-                    if let NutError::UnknownResponseType(_) = err {
-                        // Likely an item entry, let's check...
-                        if args.len() < query.len() || &args[0..query.len()] != query {
-                            return Err(ClientError::Nut(err));
-                        } else {
-                            let args = args.drain(query.len()..).collect();
-                            lines.push(args);
-                            continue;
-                        }
-                    } else {
-                        return Err(ClientError::Nut(err));
-                    }
-                } else {
-                    return Err(err);
+            match resp {
+                Response::EndList(_) => {
+                    break;
                 }
+                _ => lines.push(resp),
             }
         }
+
         Ok(lines)
     }
 }

@@ -51,8 +51,10 @@ pub enum Response {
     BeginList(String),
     /// Marks the end of a list response.
     EndList(String),
-    /// A variable response.
+    /// A variable (VAR) response.
     Var(String, String),
+    /// A UPS (UPS) response.
+    Ups(String, String),
 }
 
 impl Response {
@@ -115,6 +117,13 @@ impl Response {
                 }
             }
             "VAR" => {
+                let _var_device = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified VAR device name in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
                 let var_name = if args.is_empty() {
                     Err(ClientError::from(NutError::Generic(
                         "Unspecified VAR name in response".into(),
@@ -130,6 +139,23 @@ impl Response {
                     Ok(args.remove(0))
                 }?;
                 Ok(Response::Var(var_name, var_value))
+            }
+            "UPS" => {
+                let name = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified UPS name in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                let description = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified UPS description in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                Ok(Response::Ups(name, description))
             }
             _ => Err(NutError::UnknownResponseType(cmd_name).into()),
         }
@@ -155,22 +181,17 @@ impl Response {
         }
     }
 
-    pub fn expect_end_list(self, expected_args: &[&str]) -> crate::Result<Response> {
-        let expected_args = shell_words::join(expected_args);
-        if let Self::EndList(args) = &self {
-            if &expected_args == args {
-                Ok(self)
-            } else {
-                Err(NutError::UnexpectedResponse.into())
-            }
+    pub fn expect_var(&self) -> crate::Result<(String, String)> {
+        if let Self::Var(name, value) = &self {
+            Ok((name.to_owned(), value.to_owned()))
         } else {
             Err(NutError::UnexpectedResponse.into())
         }
     }
 
-    pub fn expect_var(&self) -> crate::Result<(&str, &str)> {
-        if let Self::Var(name, value) = &self {
-            Ok((name, value))
+    pub fn expect_ups(&self) -> crate::Result<(String, String)> {
+        if let Self::Ups(name, description) = &self {
+            Ok((name.to_owned(), description.to_owned()))
         } else {
             Err(NutError::UnexpectedResponse.into())
         }

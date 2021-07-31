@@ -38,6 +38,12 @@ fn main() -> anyhow::Result<()> {
                 .help("Lists each client connected on <upsname>, one per line."),
         )
         .arg(
+            Arg::with_name("debug")
+                .short("D")
+                .takes_value(false)
+                .help("Enables debug mode (logs network commands to stderr)."),
+        )
+        .arg(
             Arg::with_name("upsd-server")
                 .required(false)
                 .value_name("[upsname][@<hostname>[:<port>]]")
@@ -56,12 +62,14 @@ fn main() -> anyhow::Result<()> {
         |s| s.try_into().with_context(|| "Invalid upsd server name"),
     )?;
 
+    let debug = args.is_present("debug");
+
     if args.is_present("list") {
-        return cmd::list_devices(server, false);
+        return cmd::list_devices(server, false, debug);
     }
 
     if args.is_present("list-full") {
-        return cmd::list_devices(server, true);
+        return cmd::list_devices(server, true, debug);
     }
 
     if args.is_present("clients") {
@@ -70,8 +78,8 @@ fn main() -> anyhow::Result<()> {
 
     // Fallback: prints one variable (or all of them)
     if let Some(variable) = args.value_of("variable") {
-        cmd::print_variable(server, variable)
+        cmd::print_variable(server, variable, debug)
     } else {
-        cmd::list_variables(server)
+        cmd::list_variables(server, debug)
     }
 }

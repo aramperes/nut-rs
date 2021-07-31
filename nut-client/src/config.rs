@@ -12,7 +12,7 @@ pub enum Host {
 
 impl Default for Host {
     fn default() -> Self {
-        let addr = (String::from("localhost"), 3493)
+        let addr = (String::from("127.0.0.1"), 3493)
             .to_socket_addrs()
             .expect("Failed to create local UPS socket address. This is a bug.")
             .next()
@@ -58,15 +58,17 @@ pub struct Config {
     pub(crate) host: Host,
     pub(crate) auth: Option<Auth>,
     pub(crate) timeout: Duration,
+    pub(crate) debug: bool,
 }
 
 impl Config {
     /// Creates a connection configuration.
-    pub fn new(host: Host, auth: Option<Auth>, timeout: Duration) -> Self {
+    pub fn new(host: Host, auth: Option<Auth>, timeout: Duration, debug: bool) -> Self {
         Config {
             host,
             auth,
             timeout,
+            debug,
         }
     }
 }
@@ -77,6 +79,7 @@ pub struct ConfigBuilder {
     host: Option<Host>,
     auth: Option<Auth>,
     timeout: Option<Duration>,
+    debug: Option<bool>,
 }
 
 impl ConfigBuilder {
@@ -104,12 +107,19 @@ impl ConfigBuilder {
         self
     }
 
+    /// Enables debugging network calls by printing to stderr.
+    pub fn with_debug(mut self, debug: bool) -> Self {
+        self.debug = Some(debug);
+        self
+    }
+
     /// Builds the configuration with this builder.
     pub fn build(self) -> Config {
         Config::new(
             self.host.unwrap_or_default(),
             self.auth,
             self.timeout.unwrap_or_else(|| Duration::from_secs(5)),
+            self.debug.unwrap_or(false),
         )
     }
 }
