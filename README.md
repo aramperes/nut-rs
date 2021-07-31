@@ -38,25 +38,25 @@ Below is a sample program using this library (`cargo run --example blocking`).
 
 ```rust
 use std::env;
-use std::net::ToSocketAddrs;
 
 use nut_client::blocking::Connection;
-use nut_client::{Auth, ConfigBuilder, Host};
+use nut_client::{Auth, ConfigBuilder};
+use std::convert::TryInto;
 
 fn main() -> nut_client::Result<()> {
-    let addr = env::var("NUT_ADDR")
-        .unwrap_or_else(|_| "localhost:3493".into())
-        .to_socket_addrs()
-        .unwrap()
-        .next()
-        .unwrap();
+    let host = env::var("NUT_HOST").unwrap_or_else(|_| "localhost".into());
+    let port = env::var("NUT_PORT")
+        .ok()
+        .map(|s| s.parse::<u16>().ok())
+        .flatten()
+        .unwrap_or(3493);
 
     let username = env::var("NUT_USER").ok();
     let password = env::var("NUT_PASSWORD").ok();
     let auth = username.map(|username| Auth::new(username, password));
 
     let config = ConfigBuilder::new()
-        .with_host(Host::Tcp(addr))
+        .with_host((host, port).try_into().unwrap_or_default())
         .with_auth(auth)
         .with_debug(false) // Turn this on for debugging network chatter
         .build();
