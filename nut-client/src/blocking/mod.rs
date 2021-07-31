@@ -119,8 +119,8 @@ impl TcpConnection {
     }
 
     #[cfg(not(feature = "ssl"))]
-    fn enable_ssl(&mut self) -> crate::Result<()> {
-        Ok(())
+    fn enable_ssl(mut self) -> crate::Result<Self> {
+        Ok(self)
     }
 
     fn login(&mut self) -> crate::Result<()> {
