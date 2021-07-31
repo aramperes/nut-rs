@@ -58,7 +58,7 @@ However, there are also some additions:
 
 ```bash
 # Enable network debugging (global flag).
-ruspc -D
+rupsc -D
 
 # Enable SSL
 rupsc -S
