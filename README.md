@@ -38,10 +38,10 @@ built-in [upsc](https://networkupstools.org/docs/man/upsc.html) tool.
 Below is a sample program using this library (`cargo run --example blocking`).
 
 You can also run the async version of this code using
-`cargo run --example async --features async-rt` (source: `nut-client/example/async.rs`).
+`cargo run --example async --features async-rt` (source: `nut-client/examples/async.rs`).
 
 ```rust
-// nut-client/example/blocking.rs
+// nut-client/examples/blocking.rs
 
 use std::env;
 
