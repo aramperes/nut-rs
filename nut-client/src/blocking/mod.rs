@@ -38,6 +38,16 @@ impl Connection {
                 .collect()),
         }
     }
+
+    /// Queries one variable for a UPS device.
+    pub fn get_var(&mut self, ups_name: &str, variable: &str) -> crate::Result<Variable> {
+        match self {
+            Self::Tcp(conn) => {
+                let var = conn.get_var(ups_name, variable)?;
+                Ok(Variable::parse(var.0.as_str(), var.1))
+            }
+        }
+    }
 }
 
 /// A blocking TCP NUT client connection.
@@ -93,6 +103,15 @@ impl TcpConnection {
             .into_iter()
             .map(|mut row| (row.remove(0), row.remove(0)))
             .collect())
+    }
+
+    fn get_var(&mut self, ups_name: &str, variable: &str) -> crate::Result<(String, String)> {
+        let query = &["VAR", ups_name, variable];
+        Self::write_cmd(&mut self.tcp_stream, Command::Get(query))?;
+
+        let resp = Self::read_response(&mut self.tcp_stream)?;
+        let (name, value) = resp.expect_var()?;
+        Ok((name.into(), value.into()))
     }
 
     fn write_cmd(stream: &mut TcpStream, line: Command) -> crate::Result<()> {

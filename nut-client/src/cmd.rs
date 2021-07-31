@@ -1,9 +1,10 @@
 use core::fmt;
 
-use crate::NutError;
+use crate::{ClientError, NutError};
 
 #[derive(Debug, Clone)]
 pub enum Command<'a> {
+    Get(&'a [&'a str]),
     /// Passes the login username.
     SetUsername(&'a str),
     /// Passes the login password.
@@ -16,6 +17,7 @@ impl<'a> Command<'a> {
     /// The network identifier of the command.
     pub fn name(&self) -> &'static str {
         match self {
+            Self::Get(_) => "GET",
             Self::SetUsername(_) => "USERNAME",
             Self::SetPassword(_) => "PASSWORD",
             Self::List(_) => "LIST",
@@ -25,6 +27,7 @@ impl<'a> Command<'a> {
     /// The arguments of the command to serialize.
     pub fn args(&self) -> Vec<&str> {
         match self {
+            Self::Get(cmd) => cmd.to_vec(),
             Self::SetUsername(username) => vec![username],
             Self::SetPassword(password) => vec![password],
             Self::List(query) => query.to_vec(),
@@ -48,6 +51,8 @@ pub enum Response {
     BeginList(String),
     /// Marks the end of a list response.
     EndList(String),
+    /// A variable response.
+    Var(String, String),
 }
 
 impl Response {
@@ -109,6 +114,23 @@ impl Response {
                     }
                 }
             }
+            "VAR" => {
+                let var_name = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified VAR name in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                let var_value = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified VAR value in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                Ok(Response::Var(var_name, var_value))
+            }
             _ => Err(NutError::UnknownResponseType(cmd_name).into()),
         }
     }
@@ -141,6 +163,14 @@ impl Response {
             } else {
                 Err(NutError::UnexpectedResponse.into())
             }
+        } else {
+            Err(NutError::UnexpectedResponse.into())
+        }
+    }
+
+    pub fn expect_var(&self) -> crate::Result<(&str, &str)> {
+        if let Self::Var(name, value) = &self {
+            Ok((name, value))
         } else {
             Err(NutError::UnexpectedResponse.into())
         }

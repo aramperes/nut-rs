@@ -21,6 +21,12 @@ impl Default for Host {
     }
 }
 
+impl From<SocketAddr> for Host {
+    fn from(addr: SocketAddr) -> Self {
+        Self::Tcp(addr)
+    }
+}
+
 /// An authentication mechanism.
 #[derive(Clone)]
 pub struct Auth {

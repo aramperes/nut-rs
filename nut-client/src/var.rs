@@ -79,28 +79,46 @@ impl Variable {
             _ => Self::Other((name.into(), value)),
         }
     }
+
+    /// Returns the NUT name of the variable.
+    pub fn name(&self) -> &str {
+        use self::key::*;
+        match self {
+            Self::DeviceModel(_) => DEVICE_MODEL,
+            Self::DeviceManufacturer(_) => DEVICE_MANUFACTURER,
+            Self::DeviceSerial(_) => DEVICE_SERIAL,
+            Self::DeviceType(_) => DEVICE_TYPE,
+            Self::DeviceDescription(_) => DEVICE_DESCRIPTION,
+            Self::DeviceContact(_) => DEVICE_CONTACT,
+            Self::DeviceLocation(_) => DEVICE_LOCATION,
+            Self::DevicePart(_) => DEVICE_PART,
+            Self::DeviceMacAddress(_) => DEVICE_MAC_ADDRESS,
+            Self::DeviceUptime(_) => DEVICE_UPTIME,
+            Self::Other((name, _)) => name.as_str(),
+        }
+    }
+
+    /// Returns the value of the NUT variable.
+    pub fn value(&self) -> String {
+        match self {
+            Self::DeviceModel(value) => value.clone(),
+            Self::DeviceManufacturer(value) => value.clone(),
+            Self::DeviceSerial(value) => value.clone(),
+            Self::DeviceType(value) => value.to_string(),
+            Self::DeviceDescription(value) => value.clone(),
+            Self::DeviceContact(value) => value.clone(),
+            Self::DeviceLocation(value) => value.clone(),
+            Self::DevicePart(value) => value.clone(),
+            Self::DeviceMacAddress(value) => value.clone(),
+            Self::DeviceUptime(value) => value.as_secs().to_string(),
+            Self::Other((_, value)) => value.clone(),
+        }
+    }
 }
 
 impl fmt::Display for Variable {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use self::key::*;
-
-        match self {
-            Self::DeviceModel(value) => write!(f, "{} = {}", DEVICE_MODEL, value),
-            Self::DeviceManufacturer(value) => write!(f, "{} = {}", DEVICE_MANUFACTURER, value),
-            Self::DeviceSerial(value) => write!(f, "{} = {}", DEVICE_SERIAL, value),
-            Self::DeviceType(value) => write!(f, "{} = {}", DEVICE_TYPE, value),
-            Self::DeviceDescription(value) => write!(f, "{} = {}", DEVICE_DESCRIPTION, value),
-            Self::DeviceContact(value) => write!(f, "{} = {}", DEVICE_CONTACT, value),
-            Self::DeviceLocation(value) => write!(f, "{} = {}", DEVICE_LOCATION, value),
-            Self::DevicePart(value) => write!(f, "{} = {}", DEVICE_PART, value),
-            Self::DeviceMacAddress(value) => write!(f, "{} = {}", DEVICE_MAC_ADDRESS, value),
-            Self::DeviceUptime(value) => {
-                write!(f, "{} = {} seconds", DEVICE_UPTIME, value.as_secs())
-            }
-
-            Self::Other((key, value)) => write!(f, "other({}) = {}", key, value),
-        }
+        write!(f, "{}: {}", self.name(), self.value())
     }
 }
 
