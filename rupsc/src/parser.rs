@@ -49,14 +49,12 @@ impl<'a> TryFrom<&'a str> for UpsdName<'a> {
             } else {
                 hostname = prefix;
             }
+        } else if value.contains('@') {
+            let mut split = value.splitn(2, '@');
+            upsname = Some(split.next().unwrap());
+            hostname = split.next().unwrap();
         } else {
-            if value.contains('@') {
-                let mut split = value.splitn(2, '@');
-                upsname = Some(split.next().unwrap());
-                hostname = split.next().unwrap();
-            } else {
-                upsname = Some(value);
-            }
+            upsname = Some(value);
         }
 
         Ok(UpsdName {
