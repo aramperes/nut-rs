@@ -7,7 +7,7 @@ description = "A demo program to display UPS variables"
 categories = ["network-programming"]
 keywords = ["ups", "nut"]
 repository = "https://github.com/aramperes/nut-client-rs"
-readme = "../README.md"
+readme = "README.md"
 license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
