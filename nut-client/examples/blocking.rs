@@ -19,6 +19,7 @@ fn main() -> nut_client::Result<()> {
     let config = ConfigBuilder::new()
         .with_host(Host::Tcp(addr))
         .with_auth(auth)
+        .with_debug(false) // Turn this on for debugging network chatter
         .build();
 
     let mut conn = Connection::new(config)?;

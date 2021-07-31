@@ -8,20 +8,22 @@
 A [Network UPS Tools](https://github.com/networkupstools/nut) (NUT) client library for Rust.
 
 - Connect to `upsd`/`nut-server` using TCP
-- Login with with username and password
+- Login with username and password
 - List UPS devices
 - List variables for a UPS device
 
 ## ⚠️ Safety Goggles Required ⚠️
 
-Do not use this library with critical UPS devices. This library is in early development and I cannot
-guarantee that it won't mess up your UPS configurations, and potentially cause catastrophic failure to your hardware.
+Do not use this library with critical UPS devices. This library is in early development, and I cannot guarantee that it
+won't mess up your UPS configurations, and potentially cause catastrophic failure to your hardware.
 
 Be careful and stay safe!
 
 ## Example
 
-Check out the `examples` directory for more advanced examples.
+The [rupsc](https://github.com/aramperes/nut-client-rs/tree/master/rupsc)
+command-line utility is a clone of NUT's built-in [upsc](https://networkupstools.org/docs/man/upsc.html) command-line
+utility, written using this library.
 
 ```rust
 use std::env;
@@ -45,6 +47,7 @@ fn main() -> nut_client::Result<()> {
     let config = ConfigBuilder::new()
         .with_host(Host::Tcp(addr))
         .with_auth(auth)
+        .with_debug(false) // Turn this on for debugging network chatter
         .build();
 
     let mut conn = Connection::new(config)?;
