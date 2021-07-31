@@ -41,14 +41,22 @@ fn main() -> anyhow::Result<()> {
         .arg(
             Arg::with_name("debug")
                 .short("D")
+                .long("debug")
                 .takes_value(false)
                 .help("Enables debug mode (logs network commands to stderr)."),
         )
         .arg(
             Arg::with_name("ssl")
                 .short("S")
+                .long("ssl")
                 .takes_value(false)
                 .help("Enables SSL on the connection with upsd."),
+        )
+        .arg(
+            Arg::with_name("insecure-ssl")
+                .long("insecure-ssl")
+                .takes_value(false)
+                .help("Disables SSL verification on the connection with upsd."),
         )
         .arg(
             Arg::with_name("upsd-server")
@@ -70,13 +78,15 @@ fn main() -> anyhow::Result<()> {
     )?;
 
     let debug = args.is_present("debug");
-    let ssl = args.is_present("ssl");
+    let insecure_ssl = args.is_present("insecure-ssl");
+    let ssl = insecure_ssl || args.is_present("ssl");
 
     let host = server.try_into()?;
     let config = nut_client::ConfigBuilder::new()
         .with_host(host)
         .with_debug(debug)
         .with_ssl(ssl)
+        .with_insecure_ssl(insecure_ssl)
         .build();
 
     if args.is_present("list") {

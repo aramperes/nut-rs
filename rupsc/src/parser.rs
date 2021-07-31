@@ -1,9 +1,8 @@
 use anyhow::Context;
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
-use std::net::ToSocketAddrs;
 
-pub const DEFAULT_HOSTNAME: &str = "127.0.0.1";
+pub const DEFAULT_HOSTNAME: &str = "localhost";
 pub const DEFAULT_PORT: u16 = 3493;
 
 /// Connection information for a upsd server.
@@ -69,12 +68,9 @@ impl<'a> TryInto<nut_client::Host> for UpsdName<'a> {
     type Error = anyhow::Error;
 
     fn try_into(self) -> anyhow::Result<nut_client::Host> {
-        Ok((String::from(self.hostname), self.port)
-            .to_socket_addrs()
-            .with_context(|| "Failed to convert to SocketAddr")?
-            .next()
-            .with_context(|| "Failed to convert to SocketAddr")?
-            .into())
+        (self.hostname.to_owned(), self.port)
+            .try_into()
+            .with_context(|| "Invalid hostname/port")
     }
 }
 
@@ -131,7 +127,7 @@ mod tests {
                 port: DEFAULT_PORT
             }
         );
-        assert_eq!(format!("{}", name), "ups0@127.0.0.1:3493");
+        assert_eq!(format!("{}", name), "ups0@localhost:3493");
     }
 
     #[test]

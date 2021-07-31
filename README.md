@@ -85,5 +85,9 @@ fn main() -> nut_client::Result<()> {
 You can turn on SSL support by adding `.with_ssl(true)` in the `ConfigBuilder`. This requires the `ssl` feature, which
 uses `rustls` under the hood.
 
-Note that this crate turns off all certificate validation at the moment, effectively giving a false sense of security.
-If you'd like to contribute to this, see issue #8.
+Note that, by default, `.with_ssl(true)` will enable **strict** verification. This means it will verify the server
+certificate's DNS entries, check for revocation, and verify the chain using the local root trust. You must also ensure
+that the connection hostname is a valid DNS name (e.g. `localhost`, not `127.0.0.1`).
+
+If the server is using a self-signed certificate, and you'd like to ignore the strict validation, you can add
+`.with_insecure_ssl(true)` along with `.with_ssl(true)`.

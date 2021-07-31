@@ -15,6 +15,8 @@ pub enum NutError {
     /// Occurs when attempting to use SSL in a transport that doesn't support it, or
     /// if the server is not configured for it.
     SslNotSupported,
+    /// Occurs when trying to initialize a strict SSL connection with an invalid hostname.
+    SslInvalidHostname,
     /// Occurs when the client used a feature that is disabled by the server.
     FeatureNotConfigured,
     /// Generic (usually internal) client error.
@@ -29,6 +31,10 @@ impl fmt::Display for NutError {
             Self::UnexpectedResponse => write!(f, "Unexpected server response content"),
             Self::UnknownResponseType(ty) => write!(f, "Unknown response type: {}", ty),
             Self::SslNotSupported => write!(f, "SSL not supported by server or transport"),
+            Self::SslInvalidHostname => write!(
+                f,
+                "Given hostname cannot be used for a strict SSL connection"
+            ),
             Self::FeatureNotConfigured => write!(f, "Feature not configured by server"),
             Self::Generic(msg) => write!(f, "Internal client error: {}", msg),
         }

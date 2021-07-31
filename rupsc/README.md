@@ -38,11 +38,11 @@ This is a clone of [`upsc`](https://networkupstools.org/docs/man/upsc.html), so 
 # Show usage
 rupsc -h
 
-# List variables on UPS device "nutdev1" (assumes upsd running on 127.0.0.1:3493)
+# List variables on UPS device "nutdev1" (assumes upsd running on localhost:3493)
 rupsc nutdev1
 
-# List variables on UPS device "nutdev1" (remove upsd)
-rupsc nutdev1@192.168.1.2:3493
+# List variables on UPS device "nutdev1" (remote upsd)
+rupsc nutdev1@upsd.remote:3493
 
 # List available UPS devices
 rupsc -l
@@ -54,14 +54,17 @@ rupsc -L
 rupsc -c nutdev1
 ```
 
-However, there are also some additions:
+However, there are also some additions to the original tool:
 
 ```bash
-# Enable network debugging (global flag).
+# Enable network debugging
 rupsc -D
 
-# Enable SSL
+# Enable SSL (strict verification)
 rupsc -S
+
+# Enable SSL (no verification)
+rupsc --insecure-ssl
 ```
 
 ## Pronunciation

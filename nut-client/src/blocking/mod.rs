@@ -17,9 +17,7 @@ impl Connection {
     /// Initializes a connection to a NUT server (upsd).
     pub fn new(config: &Config) -> crate::Result<Self> {
         match &config.host {
-            Host::Tcp(socket_addr) => {
-                Ok(Self::Tcp(TcpConnection::new(config.clone(), socket_addr)?))
-            }
+            Host::Tcp(host) => Ok(Self::Tcp(TcpConnection::new(config.clone(), &host.addr)?)),
         }
     }
 
@@ -62,7 +60,7 @@ impl Connection {
 /// A blocking TCP NUT client connection.
 pub struct TcpConnection {
     config: Config,
-    pipeline: ConnectionStream,
+    stream: ConnectionStream,
 }
 
 impl TcpConnection {
@@ -71,7 +69,7 @@ impl TcpConnection {
         let tcp_stream = TcpStream::connect_timeout(socket_addr, config.timeout)?;
         let mut connection = Self {
             config,
-            pipeline: ConnectionStream::Plain(tcp_stream),
+            stream: ConnectionStream::Plain(tcp_stream),
         };
 
         // Initialize SSL connection
@@ -98,19 +96,37 @@ impl TcpConnection {
                 })?
                 .expect_ok()?;
 
-            let mut config = rustls::ClientConfig::new();
-            config
-                .dangerous()
-                .set_certificate_verifier(std::sync::Arc::new(
-                    crate::ssl::NutCertificateValidator::new(&self.config),
-                ));
+            let mut ssl_config = rustls::ClientConfig::new();
+            let sess = if self.config.ssl_insecure {
+                ssl_config
+                    .dangerous()
+                    .set_certificate_verifier(std::sync::Arc::new(
+                        crate::ssl::InsecureCertificateValidator::new(&self.config),
+                    ));
 
-            // todo: this DNS name is temporary; should get from connection hostname? (#8)
-            let dns_name = webpki::DNSNameRef::try_from_ascii_str("www.google.com").unwrap();
-            let sess = rustls::ClientSession::new(&std::sync::Arc::new(config), dns_name);
+                let dns_name = webpki::DNSNameRef::try_from_ascii_str("www.google.com").unwrap();
+
+                rustls::ClientSession::new(&std::sync::Arc::new(ssl_config), dns_name)
+            } else {
+                // Try to get hostname as given (e.g. localhost can be used for strict SSL, but not 127.0.0.1)
+                let hostname = self
+                    .config
+                    .host
+                    .hostname()
+                    .ok_or(ClientError::Nut(NutError::SslInvalidHostname))?;
+
+                let dns_name = webpki::DNSNameRef::try_from_ascii_str(&hostname)
+                    .map_err(|_| ClientError::Nut(NutError::SslInvalidHostname))?;
+
+                ssl_config
+                    .root_store
+                    .add_server_trust_anchors(&webpki_roots::TLS_SERVER_ROOTS);
+
+                rustls::ClientSession::new(&std::sync::Arc::new(ssl_config), dns_name)
+            };
 
             // Wrap and override the TCP stream
-            self.pipeline = self.pipeline.upgrade_ssl(sess)?;
+            self.stream = self.stream.upgrade_ssl(sess)?;
 
             // Send a test command
             self.get_network_version()?;
@@ -179,8 +195,8 @@ impl TcpConnection {
         if self.config.debug {
             eprint!("DEBUG -> {}", line);
         }
-        self.pipeline.write_all(line.as_bytes())?;
-        self.pipeline.flush()?;
+        self.stream.write_all(line.as_bytes())?;
+        self.stream.flush()?;
         Ok(())
     }
 
@@ -203,19 +219,19 @@ impl TcpConnection {
     }
 
     fn read_response(&mut self) -> crate::Result<Response> {
-        let mut reader = BufReader::new(&mut self.pipeline);
+        let mut reader = BufReader::new(&mut self.stream);
         let args = Self::parse_line(&mut reader, self.config.debug)?;
         Response::from_args(args)
     }
 
     fn read_plain_response(&mut self) -> crate::Result<String> {
-        let mut reader = BufReader::new(&mut self.pipeline);
+        let mut reader = BufReader::new(&mut self.stream);
         let args = Self::parse_line(&mut reader, self.config.debug)?;
         Ok(args.join(" "))
     }
 
     fn read_list(&mut self, query: &[&str]) -> crate::Result<Vec<Response>> {
-        let mut reader = BufReader::new(&mut self.pipeline);
+        let mut reader = BufReader::new(&mut self.stream);
         let args = Self::parse_line(&mut reader, self.config.debug)?;
 
         Response::from_args(args)?.expect_begin_list(query)?;
