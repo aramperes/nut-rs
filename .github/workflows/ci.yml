@@ -81,7 +81,12 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --features env-file
+
+      - name: Run cargo test with ssl
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features ssl
 
   lints:
     name: Lints
