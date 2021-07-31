@@ -12,18 +12,28 @@ A [Network UPS Tools](https://github.com/networkupstools/nut) (NUT) client libra
 - List UPS devices
 - List variables for a UPS device
 
-## ⚠️ Safety Goggles Required ⚠️
+## Getting Started
 
-Do not use this library with critical UPS devices. This library is in early development, and I cannot guarantee that it
-won't mess up your UPS configurations, and potentially cause catastrophic failure to your hardware.
+You'll need a running instance of the NUT daemon (`upsd`) and
+a [compatible UPS device](https://networkupstools.org/stable-hcl.html)
+to use this library:
 
-Be careful and stay safe!
+1. [Install NUT](https://networkupstools.org/docs/user-manual.chunked/ar01s05.html)
+2. [Configure and launch upsd](https://networkupstools.org/docs/user-manual.chunked/ar01s06.html)
+
+Verify that your UPS is connected using the built-in `upsc` tool:
+
+```bash
+upsc myupsname@localhost ups.status
+```
 
 ## Example
 
 The [rupsc](https://github.com/aramperes/nut-client-rs/tree/master/rupsc)
-command-line utility is a clone of NUT's built-in [upsc](https://networkupstools.org/docs/man/upsc.html) command-line
-utility, written using this library.
+CLI is written using this library, and is a clone of NUT's
+built-in [upsc](https://networkupstools.org/docs/man/upsc.html) tool.
+
+Here is an example use of this library (`cargo run --example blocking`):
 
 ```rust
 use std::env;
