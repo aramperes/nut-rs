@@ -52,9 +52,17 @@ pub enum Response {
     /// Marks the end of a list response.
     EndList(String),
     /// A variable (VAR) response.
+    ///
+    /// Params: (var name, var value)
     Var(String, String),
     /// A UPS (UPS) response.
+    ///
+    /// Params: (device name, device description)
     Ups(String, String),
+    /// A client (CLIENT) response.
+    ///
+    /// Params: (client IP)
+    Client(String),
 }
 
 impl Response {
@@ -157,6 +165,23 @@ impl Response {
                 }?;
                 Ok(Response::Ups(name, description))
             }
+            "CLIENT" => {
+                let _device = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified CLIENT device in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                let ip_address = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified CLIENT IP in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                Ok(Response::Client(ip_address))
+            }
             _ => Err(NutError::UnknownResponseType(cmd_name).into()),
         }
     }
@@ -192,6 +217,14 @@ impl Response {
     pub fn expect_ups(&self) -> crate::Result<(String, String)> {
         if let Self::Ups(name, description) = &self {
             Ok((name.to_owned(), description.to_owned()))
+        } else {
+            Err(NutError::UnexpectedResponse.into())
+        }
+    }
+
+    pub fn expect_client(&self) -> crate::Result<String> {
+        if let Self::Client(client_ip) = &self {
+            Ok(client_ip.to_owned())
         } else {
             Err(NutError::UnexpectedResponse.into())
         }

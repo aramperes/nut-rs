@@ -28,6 +28,13 @@ impl Connection {
         }
     }
 
+    /// Queries a list of client IP addresses connected to the given device.
+    pub fn list_clients(&mut self, ups_name: &str) -> crate::Result<Vec<String>> {
+        match self {
+            Self::Tcp(conn) => conn.list_clients(ups_name),
+        }
+    }
+
     /// Queries the list of variables for a UPS device.
     pub fn list_vars(&mut self, ups_name: &str) -> crate::Result<Vec<Variable>> {
         match self {
@@ -101,6 +108,18 @@ impl TcpConnection {
         let list = Self::read_list(&mut self.tcp_stream, &["UPS"], self.config.debug)?;
 
         list.into_iter().map(|row| row.expect_ups()).collect()
+    }
+
+    fn list_clients(&mut self, ups_name: &str) -> crate::Result<Vec<String>> {
+        let query = &["CLIENT", ups_name];
+        Self::write_cmd(
+            &mut self.tcp_stream,
+            Command::List(query),
+            self.config.debug,
+        )?;
+        let list = Self::read_list(&mut self.tcp_stream, query, self.config.debug)?;
+
+        list.into_iter().map(|row| row.expect_client()).collect()
     }
 
     fn list_vars(&mut self, ups_name: &str) -> crate::Result<Vec<(String, String)>> {

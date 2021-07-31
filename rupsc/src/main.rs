@@ -73,7 +73,7 @@ fn main() -> anyhow::Result<()> {
     }
 
     if args.is_present("clients") {
-        todo!("listing clients")
+        return cmd::list_clients(server, debug);
     }
 
     // Fallback: prints one variable (or all of them)

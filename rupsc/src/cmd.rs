@@ -43,6 +43,19 @@ pub fn list_variables(server: UpsdName, debug: bool) -> anyhow::Result<()> {
     Ok(())
 }
 
+pub fn list_clients(server: UpsdName, debug: bool) -> anyhow::Result<()> {
+    let ups_name = server
+        .upsname
+        .with_context(|| "ups name must be specified: <upsname>[@<hostname>[:<port>]]")?;
+    let mut conn = connect(server, debug)?;
+
+    for client_ip in conn.list_clients(ups_name)? {
+        println!("{}", client_ip);
+    }
+
+    Ok(())
+}
+
 fn connect(server: UpsdName, debug: bool) -> anyhow::Result<Connection> {
     let host = server.try_into()?;
     let config = nut_client::ConfigBuilder::new()
