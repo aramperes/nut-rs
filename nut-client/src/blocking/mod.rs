@@ -3,10 +3,9 @@ use std::net::{SocketAddr, TcpStream};
 
 use crate::blocking::filter::ConnectionPipeline;
 use crate::cmd::{Command, Response};
-use crate::{Config, Host, NutError, Variable};
+use crate::{ClientError, Config, Host, NutError, Variable};
 
 mod filter;
-mod reader;
 
 /// A blocking NUT client connection.
 pub enum Connection {
@@ -89,7 +88,15 @@ impl TcpConnection {
         if self.config.ssl {
             // Send TLS request and check for 'OK'
             self.write_cmd(Command::StartTLS)?;
-            self.read_response()?.expect_ok()?;
+            self.read_response()
+                .map_err(|e| {
+                    if let ClientError::Nut(NutError::FeatureNotConfigured) = e {
+                        ClientError::Nut(NutError::SslNotSupported)
+                    } else {
+                        e
+                    }
+                })?
+                .expect_ok()?;
 
             let mut config = rustls::ClientConfig::new();
             config
@@ -98,16 +105,20 @@ impl TcpConnection {
                     crate::ssl::NutCertificateValidator::new(&self.config),
                 ));
 
+            // todo: this DNS name is temporary; should get from connection hostname? (#8)
             let dns_name = webpki::DNSNameRef::try_from_ascii_str("www.google.com").unwrap();
             let sess = rustls::ClientSession::new(&std::sync::Arc::new(config), dns_name);
 
             // Wrap and override the TCP stream
-            let tcp = self.pipeline.tcp().unwrap();
+            let tcp = self
+                .pipeline
+                .tcp()
+                .ok_or_else(|| ClientError::from(NutError::SslNotSupported))?;
             let tls = rustls::StreamOwned::new(sess, tcp);
             self.pipeline = ConnectionPipeline::Ssl(tls);
 
             // Send a test command
-            self.get_version()?;
+            self.get_network_version()?;
         }
         Ok(())
     }
@@ -163,7 +174,7 @@ impl TcpConnection {
         self.read_response()?.expect_var()
     }
 
-    fn get_version(&mut self) -> crate::Result<String> {
+    fn get_network_version(&mut self) -> crate::Result<String> {
         self.write_cmd(Command::NetworkVersion)?;
         self.read_plain_response()
     }

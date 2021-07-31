@@ -90,6 +90,7 @@ impl Response {
                     match err_type.as_str() {
                         "ACCESS-DENIED" => Err(NutError::AccessDenied.into()),
                         "UNKNOWN-UPS" => Err(NutError::UnknownUps.into()),
+                        "FEATURE-NOT-CONFIGURED" => Err(NutError::FeatureNotConfigured.into()),
                         _ => Err(NutError::Generic(format!(
                             "Server error: {} {}",
                             err_type,
