@@ -114,7 +114,7 @@ dependencies = [
 
 [[package]]
 name = "nut-client"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "rustls",
  "shell-words",
@@ -163,7 +163,7 @@ dependencies = [
 
 [[package]]
 name = "rupsc"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "clap",
