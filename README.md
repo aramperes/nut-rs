@@ -11,6 +11,7 @@ A [Network UPS Tools](https://github.com/networkupstools/nut) (NUT) client libra
 - Login with username and password
 - List UPS devices
 - List variables for a UPS device
+- Connect securely with SSL (optional feature)
 
 ## Getting Started
 
@@ -60,7 +61,7 @@ fn main() -> nut_client::Result<()> {
         .with_debug(false) // Turn this on for debugging network chatter
         .build();
 
-    let mut conn = Connection::new(config)?;
+    let mut conn = Connection::new(&config)?;
 
     // Print a list of all UPS devices
     println!("Connected UPS devices:");
@@ -78,3 +79,12 @@ fn main() -> nut_client::Result<()> {
     Ok(())
 }
 ```
+
+## SSL
+
+You can turn on SSL support by adding `.with_ssl(true)` in the `ConfigBuilder`.
+This requires the `ssl` feature, which uses `rustls` under the hood.
+
+Note that this crate turns off all certificate validation at the moment, effectively
+giving a false sense of security. If you'd like to contribute to this, see issue #8.
+

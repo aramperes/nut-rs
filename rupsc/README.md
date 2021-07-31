@@ -15,6 +15,7 @@ Written using the [nut-client](https://github.com/aramperes/nut-client-rs) crate
 - List variables for a UPS device
 - Get variable value of a UPS device
 - List clients connected to a UPS device
+- Connect securely with SSL
 
 ## Installation
 
@@ -58,6 +59,9 @@ However, there are also some additions:
 ```bash
 # Enable network debugging (global flag).
 ruspc -D
+
+# Enable SSL
+rupsc -S
 ```
 
 ## Pronunciation

@@ -11,6 +11,10 @@ pub enum Command<'a> {
     SetPassword(&'a str),
     /// Queries for a list. Allows for any number of arguments, which forms a single query.
     List(&'a [&'a str]),
+    /// Tells upsd to switch to TLS, so all future communications will be encrypted.
+    StartTLS,
+    /// Queries the network version.
+    NetworkVersion,
 }
 
 impl<'a> Command<'a> {
@@ -21,6 +25,8 @@ impl<'a> Command<'a> {
             Self::SetUsername(_) => "USERNAME",
             Self::SetPassword(_) => "PASSWORD",
             Self::List(_) => "LIST",
+            Self::StartTLS => "STARTTLS",
+            Self::NetworkVersion => "NETVER",
         }
     }
 
@@ -31,6 +37,7 @@ impl<'a> Command<'a> {
             Self::SetUsername(username) => vec![username],
             Self::SetPassword(password) => vec![password],
             Self::List(query) => query.to_vec(),
+            _ => Vec::new(),
         }
     }
 }
@@ -83,6 +90,7 @@ impl Response {
                     match err_type.as_str() {
                         "ACCESS-DENIED" => Err(NutError::AccessDenied.into()),
                         "UNKNOWN-UPS" => Err(NutError::UnknownUps.into()),
+                        "FEATURE-NOT-CONFIGURED" => Err(NutError::FeatureNotConfigured.into()),
                         _ => Err(NutError::Generic(format!(
                             "Server error: {} {}",
                             err_type,

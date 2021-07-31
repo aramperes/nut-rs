@@ -3,13 +3,14 @@
 ///! This a Rust clone of [upsc](https://github.com/networkupstools/nut/blob/master/clients/upsc.c).
 ///!
 ///! P.S.: pronounced "r-oopsie".
-mod cmd;
-mod parser;
+use core::convert::TryInto;
 
-use crate::parser::UpsdName;
 use anyhow::Context;
 use clap::{App, Arg};
-use core::convert::TryInto;
+
+use crate::parser::UpsdName;
+mod cmd;
+mod parser;
 
 fn main() -> anyhow::Result<()> {
     let args = App::new(clap::crate_name!())
@@ -44,6 +45,12 @@ fn main() -> anyhow::Result<()> {
                 .help("Enables debug mode (logs network commands to stderr)."),
         )
         .arg(
+            Arg::with_name("ssl")
+                .short("S")
+                .takes_value(false)
+                .help("Enables SSL on the connection with upsd."),
+        )
+        .arg(
             Arg::with_name("upsd-server")
                 .required(false)
                 .value_name("[upsname][@<hostname>[:<port>]]")
@@ -63,23 +70,37 @@ fn main() -> anyhow::Result<()> {
     )?;
 
     let debug = args.is_present("debug");
+    let ssl = args.is_present("ssl");
+
+    let host = server.try_into()?;
+    let config = nut_client::ConfigBuilder::new()
+        .with_host(host)
+        .with_debug(debug)
+        .with_ssl(ssl)
+        .build();
 
     if args.is_present("list") {
-        return cmd::list_devices(server, false, debug);
+        return cmd::list_devices(config, false);
     }
 
     if args.is_present("list-full") {
-        return cmd::list_devices(server, true, debug);
+        return cmd::list_devices(config, true);
     }
 
     if args.is_present("clients") {
-        return cmd::list_clients(server, debug);
+        return cmd::list_clients(config, get_ups_name(&server)?);
     }
 
     // Fallback: prints one variable (or all of them)
     if let Some(variable) = args.value_of("variable") {
-        cmd::print_variable(server, variable, debug)
+        cmd::print_variable(config, get_ups_name(&server)?, variable)
     } else {
-        cmd::list_variables(server, debug)
+        cmd::list_variables(config, get_ups_name(&server)?)
     }
+}
+
+fn get_ups_name<'a>(server: &'a UpsdName) -> anyhow::Result<&'a str> {
+    server
+        .upsname
+        .with_context(|| "ups name must be specified: <upsname>[@<hostname>[:<port>]]")
 }

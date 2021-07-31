@@ -15,4 +15,6 @@ pub mod blocking;
 mod cmd;
 mod config;
 mod error;
+#[cfg(feature = "ssl")]
+mod ssl;
 mod var;

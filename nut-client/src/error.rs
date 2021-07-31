@@ -12,6 +12,11 @@ pub enum NutError {
     UnexpectedResponse,
     /// Occurs when the response type is not recognized by the client.
     UnknownResponseType(String),
+    /// Occurs when attempting to use SSL in a transport that doesn't support it, or
+    /// if the server is not configured for it.
+    SslNotSupported,
+    /// Occurs when the client used a feature that is disabled by the server.
+    FeatureNotConfigured,
     /// Generic (usually internal) client error.
     Generic(String),
 }
@@ -23,6 +28,8 @@ impl fmt::Display for NutError {
             Self::UnknownUps => write!(f, "Unknown UPS device name"),
             Self::UnexpectedResponse => write!(f, "Unexpected server response content"),
             Self::UnknownResponseType(ty) => write!(f, "Unknown response type: {}", ty),
+            Self::SslNotSupported => write!(f, "SSL not supported by server or transport"),
+            Self::FeatureNotConfigured => write!(f, "Feature not configured by server"),
             Self::Generic(msg) => write!(f, "Internal client error: {}", msg),
         }
     }

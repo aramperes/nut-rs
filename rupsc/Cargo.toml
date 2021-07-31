@@ -19,3 +19,4 @@ anyhow = "1"
 [dependencies.nut-client]
 version = "0.1.0"
 path = "../nut-client"
+features = ["ssl"]
