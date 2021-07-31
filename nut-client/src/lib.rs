@@ -11,6 +11,9 @@ pub use var::*;
 
 /// Blocking client implementation for NUT.
 pub mod blocking;
+/// Async client implementation for NUT, using Tokio.
+#[cfg(feature = "tokio")]
+pub mod tokio;
 
 mod cmd;
 mod config;

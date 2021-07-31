@@ -135,7 +135,7 @@ impl TcpConnection {
     }
 
     #[cfg(not(feature = "ssl"))]
-    fn enable_ssl(mut self) -> crate::Result<Self> {
+    fn enable_ssl(self) -> crate::Result<Self> {
         Ok(self)
     }
 
@@ -185,6 +185,7 @@ impl TcpConnection {
         self.read_response()?.expect_var()
     }
 
+    #[allow(dead_code)]
     fn get_network_version(&mut self) -> crate::Result<String> {
         self.write_cmd(Command::NetworkVersion)?;
         self.read_plain_response()
