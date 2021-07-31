@@ -34,7 +34,7 @@ The [rupsc](https://github.com/aramperes/nut-client-rs/tree/master/rupsc)
 CLI is written using this library, and is a clone of NUT's
 built-in [upsc](https://networkupstools.org/docs/man/upsc.html) tool.
 
-Here is an example use of this library (`cargo run --example blocking`):
+Below is a sample program using this library (`cargo run --example blocking`).
 
 ```rust
 use std::env;
@@ -82,9 +82,9 @@ fn main() -> nut_client::Result<()> {
 
 ## SSL
 
-You can turn on SSL support by adding `.with_ssl(true)` in the `ConfigBuilder`.
-This requires the `ssl` feature, which uses `rustls` under the hood.
+You can turn on SSL support by adding `.with_ssl(true)` in the `ConfigBuilder`. This requires the `ssl` feature, which
+uses `rustls` under the hood.
 
-Note that this crate turns off all certificate validation at the moment, effectively
-giving a false sense of security. If you'd like to contribute to this, see issue #8.
+Note that this crate turns off all certificate validation at the moment, effectively giving a false sense of security.
+If you'd like to contribute to this, see issue #8.
 
