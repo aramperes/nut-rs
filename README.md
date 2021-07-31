@@ -87,4 +87,3 @@ uses `rustls` under the hood.
 
 Note that this crate turns off all certificate validation at the moment, effectively giving a false sense of security.
 If you'd like to contribute to this, see issue #8.
-
