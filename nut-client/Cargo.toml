@@ -17,6 +17,7 @@ license = "MIT"
 shell-words = "1.0.0"
 rustls = { version = "0.19", optional = true, features = ["dangerous_configuration"] }
 webpki = { version = "0.21", optional = true }
+webpki-roots = { version = "0.21", optional = true }
 
 [features]
-ssl = ["rustls", "webpki"]
+ssl = ["rustls", "webpki", "webpki-roots"]
