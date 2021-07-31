@@ -15,9 +15,21 @@ license = "MIT"
 
 [dependencies]
 shell-words = "1.0.0"
-rustls = { version = "0.19", optional = true, features = ["dangerous_configuration"] }
+rustls = { version = "0.19", optional = true }
 webpki = { version = "0.21", optional = true }
 webpki-roots = { version = "0.21", optional = true }
+tokio = { version = "1", optional = true, features = ["net", "io-util", "rt"] }
+tokio-rustls = { version = "0.22", optional = true }
 
 [features]
-ssl = ["rustls", "webpki", "webpki-roots"]
+default = []
+ssl = ["rustls", "rustls/dangerous_configuration", "webpki", "webpki-roots"]
+async = ["tokio"]
+async-ssl = ["async", "tokio-rustls", "ssl"]
+
+# a feature gate for examples
+async-rt = ["tokio/rt-multi-thread", "tokio/macros"]
+
+[[example]]
+name = "async"
+required-features = ["async-rt"]

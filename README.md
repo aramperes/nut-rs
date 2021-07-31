@@ -12,6 +12,7 @@ A [Network UPS Tools](https://github.com/networkupstools/nut) (NUT) client libra
 - List UPS devices
 - List variables for a UPS device
 - Connect securely with SSL (optional feature)
+- Supports blocking and async (Tokio)
 
 ## Getting Started
 
@@ -36,7 +37,12 @@ built-in [upsc](https://networkupstools.org/docs/man/upsc.html) tool.
 
 Below is a sample program using this library (`cargo run --example blocking`).
 
+You can also run the async version of this code using
+`cargo run --example async --features async-rt` (source: `nut-client/example/async.rs`).
+
 ```rust
+// nut-client/example/blocking.rs
+
 use std::env;
 
 use nut_client::blocking::Connection;
@@ -91,3 +97,10 @@ that the connection hostname is a valid DNS name (e.g. `localhost`, not `127.0.0
 
 If the server is using a self-signed certificate, and you'd like to ignore the strict validation, you can add
 `.with_insecure_ssl(true)` along with `.with_ssl(true)`.
+
+## Async (Tokio)
+
+The `nut-client` library supports async network requests. This requires the `async` feature, which uses Tokio v1 under
+the hood.
+
+For SSL support, you must use the `async-ssl` feature as well.
