@@ -116,7 +116,7 @@ pub enum Response {
 }
 
 impl Response {
-    pub fn from_args(mut args: Vec<String>) -> crate::Result<Response> {
+    pub(crate) fn from_args(mut args: Vec<String>) -> crate::Result<Response> {
         if args.is_empty() {
             return Err(ClientError::generic(
                 "Parsing server response failed: empty line",
@@ -396,14 +396,14 @@ impl Response {
         }
     }
 
-    pub fn expect_ok(&self) -> crate::Result<&Response> {
+    pub(crate) fn expect_ok(&self) -> crate::Result<&Response> {
         match self {
             Self::Ok => Ok(self),
             _ => Err(NutError::UnexpectedResponse.into()),
         }
     }
 
-    pub fn expect_begin_list(self, expected_args: &[&str]) -> crate::Result<Response> {
+    pub(crate) fn expect_begin_list(self, expected_args: &[&str]) -> crate::Result<Response> {
         let expected_args = shell_words::join(expected_args);
         if let Self::BeginList(args) = &self {
             if &expected_args == args {
@@ -416,7 +416,7 @@ impl Response {
         }
     }
 
-    pub fn expect_var(&self) -> crate::Result<Variable> {
+    pub(crate) fn expect_var(&self) -> crate::Result<Variable> {
         if let Self::Var(name, value) = &self {
             Ok(Variable::parse(name, value.to_owned()))
         } else {
@@ -424,7 +424,7 @@ impl Response {
         }
     }
 
-    pub fn expect_rw(&self) -> crate::Result<Variable> {
+    pub(crate) fn expect_rw(&self) -> crate::Result<Variable> {
         if let Self::Rw(name, value) = &self {
             Ok(Variable::parse(name, value.to_owned()))
         } else {
@@ -432,7 +432,7 @@ impl Response {
         }
     }
 
-    pub fn expect_ups(&self) -> crate::Result<(String, String)> {
+    pub(crate) fn expect_ups(&self) -> crate::Result<(String, String)> {
         if let Self::Ups(name, description) = &self {
             Ok((name.to_owned(), description.to_owned()))
         } else {
@@ -440,7 +440,7 @@ impl Response {
         }
     }
 
-    pub fn expect_client(&self) -> crate::Result<String> {
+    pub(crate) fn expect_client(&self) -> crate::Result<String> {
         if let Self::Client(client_ip) = &self {
             Ok(client_ip.to_owned())
         } else {
@@ -448,7 +448,7 @@ impl Response {
         }
     }
 
-    pub fn expect_cmd(&self) -> crate::Result<String> {
+    pub(crate) fn expect_cmd(&self) -> crate::Result<String> {
         if let Self::Cmd(name) = &self {
             Ok(name.to_owned())
         } else {
@@ -456,7 +456,7 @@ impl Response {
         }
     }
 
-    pub fn expect_cmddesc(&self) -> crate::Result<String> {
+    pub(crate) fn expect_cmddesc(&self) -> crate::Result<String> {
         if let Self::CmdDesc(description) = &self {
             Ok(description.to_owned())
         } else {
@@ -464,7 +464,7 @@ impl Response {
         }
     }
 
-    pub fn expect_upsdesc(&self) -> crate::Result<String> {
+    pub(crate) fn expect_upsdesc(&self) -> crate::Result<String> {
         if let Self::UpsDesc(description) = &self {
             Ok(description.to_owned())
         } else {
@@ -472,7 +472,7 @@ impl Response {
         }
     }
 
-    pub fn expect_desc(&self) -> crate::Result<String> {
+    pub(crate) fn expect_desc(&self) -> crate::Result<String> {
         if let Self::Desc(description) = &self {
             Ok(description.to_owned())
         } else {
@@ -480,7 +480,7 @@ impl Response {
         }
     }
 
-    pub fn expect_numlogins(&self) -> crate::Result<i32> {
+    pub(crate) fn expect_numlogins(&self) -> crate::Result<i32> {
         if let Self::NumLogins(num) = &self {
             Ok(*num)
         } else {
@@ -488,7 +488,7 @@ impl Response {
         }
     }
 
-    pub fn expect_type(&self) -> crate::Result<VariableDefinition> {
+    pub(crate) fn expect_type(&self) -> crate::Result<VariableDefinition> {
         if let Self::Type(name, types) = &self {
             VariableDefinition::try_from((
                 name.to_owned(),
@@ -499,7 +499,7 @@ impl Response {
         }
     }
 
-    pub fn expect_range(&self) -> crate::Result<VariableRange> {
+    pub(crate) fn expect_range(&self) -> crate::Result<VariableRange> {
         if let Self::Range(range) = &self {
             Ok(range.to_owned())
         } else {
@@ -507,7 +507,7 @@ impl Response {
         }
     }
 
-    pub fn expect_enum(&self) -> crate::Result<String> {
+    pub(crate) fn expect_enum(&self) -> crate::Result<String> {
         if let Self::Enum(value) = &self {
             Ok(value.to_owned())
         } else {
