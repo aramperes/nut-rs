@@ -43,6 +43,7 @@ fn main() -> nut_client::Result<()> {
         println!("\t  Mutable Variables:");
         for var in mutable_vars.iter() {
             println!("\t\t- {}", var);
+            println!("\t\t  {:?}", conn.get_var_type(&name, var.name())?);
         }
 
         // List UPS immutable properties (key = val)
@@ -52,6 +53,7 @@ fn main() -> nut_client::Result<()> {
                 continue;
             }
             println!("\t\t- {}", var);
+            println!("\t\t  {:?}", conn.get_var_type(&name, var.name())?);
         }
 
         // List UPS commands

@@ -1,4 +1,6 @@
 use core::fmt;
+use std::collections::HashSet;
+use std::convert::TryFrom;
 use std::time::Duration;
 
 /// Well-known variable keys for NUT UPS devices.
@@ -163,5 +165,177 @@ impl fmt::Display for DeviceType {
             Self::Ats => write!(f, "ats"),
             Self::Other(val) => write!(f, "other({})", val),
         }
+    }
+}
+
+/// NUT Variable type
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[allow(dead_code)]
+pub(crate) enum VariableType {
+    /// A mutable variable (`RW`).
+    Rw,
+    /// An enumerated type, which supports a few specific values (`ENUM`).
+    Enum,
+    /// A string with a maximum size (`STRING:n`).
+    String(usize),
+    /// A numeric type, either integer or float, comprised in the range defined by `LIST RANGE`.
+    Range,
+    /// A simple numeric value, either integer or float.
+    Number,
+}
+
+impl TryFrom<&str> for VariableType {
+    type Error = crate::ClientError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "RW" => Ok(Self::Rw),
+            "ENUM" => Ok(Self::Enum),
+            "RANGE" => Ok(Self::Range),
+            "NUMBER" => Ok(Self::Number),
+            other => {
+                if other.starts_with("STRING:") {
+                    let size = other
+                        .splitn(2, ':')
+                        .nth(1)
+                        .map(|s| s.parse().ok())
+                        .flatten()
+                        .ok_or_else(|| {
+                            crate::ClientError::Nut(crate::NutError::Generic(
+                                "Invalid STRING definition".into(),
+                            ))
+                        })?;
+                    Ok(Self::String(size))
+                } else {
+                    Err(crate::ClientError::Nut(crate::NutError::Generic(format!(
+                        "Unrecognized variable type: {}",
+                        value
+                    ))))
+                }
+            }
+        }
+    }
+}
+
+/// NUT Variable definition.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct VariableDefinition(String, HashSet<VariableType>);
+
+impl VariableDefinition {
+    /// The name of this variable.
+    pub fn name(&self) -> &str {
+        self.0.as_str()
+    }
+
+    /// Whether this variable is mutable.
+    pub fn is_mutable(&self) -> bool {
+        self.1.contains(&VariableType::Rw)
+    }
+
+    /// Whether this variable is an enumerated type.
+    pub fn is_enum(&self) -> bool {
+        self.1.contains(&VariableType::Enum)
+    }
+
+    /// Whether this variable is a String type
+    pub fn is_string(&self) -> bool {
+        self.1.iter().any(|t| matches!(t, VariableType::String(_)))
+    }
+
+    /// Whether this variable is a numeric type,
+    /// either integer or float, comprised in a range
+    pub fn is_range(&self) -> bool {
+        self.1.contains(&VariableType::Range)
+    }
+
+    /// Whether this variable is a numeric type, either integer or float.
+    pub fn is_number(&self) -> bool {
+        self.1.contains(&VariableType::Number)
+    }
+
+    /// Returns the max string length, if applicable.
+    pub fn get_string_length(&self) -> Option<usize> {
+        self.1.iter().find_map(|t| match t {
+            VariableType::String(n) => Some(*n),
+            _ => None,
+        })
+    }
+}
+
+impl<A: ToString> TryFrom<(A, Vec<&str>)> for VariableDefinition {
+    type Error = crate::ClientError;
+
+    fn try_from(value: (A, Vec<&str>)) -> Result<Self, Self::Error> {
+        Ok(VariableDefinition(
+            value.0.to_string(),
+            value
+                .1
+                .iter()
+                .map(|s| VariableType::try_from(*s))
+                .collect::<crate::Result<HashSet<VariableType>>>()?,
+        ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::iter::FromIterator;
+
+    use super::*;
+
+    #[test]
+    fn test_parse_variable_definition() {
+        assert_eq!(
+            VariableDefinition::try_from(("var0", vec![])).unwrap(),
+            VariableDefinition("var0".into(), HashSet::new())
+        );
+
+        assert_eq!(
+            VariableDefinition::try_from(("var1", vec!["RW"])).unwrap(),
+            VariableDefinition(
+                "var1".into(),
+                HashSet::from_iter(vec![VariableType::Rw].into_iter())
+            )
+        );
+
+        assert_eq!(
+            VariableDefinition::try_from(("var1", vec!["RW", "STRING:123"])).unwrap(),
+            VariableDefinition(
+                "var1".into(),
+                HashSet::from_iter(vec![VariableType::Rw, VariableType::String(123)].into_iter())
+            )
+        );
+
+        assert!(
+            VariableDefinition::try_from(("var1", vec!["RW", "STRING:123"]))
+                .unwrap()
+                .is_mutable()
+        );
+        assert!(
+            VariableDefinition::try_from(("var1", vec!["RW", "STRING:123"]))
+                .unwrap()
+                .is_string()
+        );
+        assert!(
+            !VariableDefinition::try_from(("var1", vec!["RW", "STRING:123"]))
+                .unwrap()
+                .is_enum()
+        );
+        assert!(
+            !VariableDefinition::try_from(("var1", vec!["RW", "STRING:123"]))
+                .unwrap()
+                .is_number()
+        );
+        assert!(
+            !VariableDefinition::try_from(("var1", vec!["RW", "STRING:123"]))
+                .unwrap()
+                .is_range()
+        );
+        assert_eq!(
+            VariableDefinition::try_from(("var1", vec!["RW", "STRING:123"]))
+                .unwrap()
+                .get_string_length(),
+            Some(123)
+        );
     }
 }

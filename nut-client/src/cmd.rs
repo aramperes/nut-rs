@@ -1,6 +1,7 @@
 use core::fmt;
 
-use crate::{ClientError, NutError, Variable};
+use crate::{ClientError, NutError, Variable, VariableDefinition};
+use std::convert::TryFrom;
 
 #[derive(Debug, Clone)]
 pub enum Command<'a> {
@@ -98,8 +99,12 @@ pub enum Response {
     Desc(String),
     /// A NUMLOGINS response.
     ///
-    /// Params (number of logins)
+    /// Params: (number of logins)
     NumLogins(i32),
+    /// A variable type (TYPE) response.
+    ///
+    /// Params: (variable name, variable types)
+    Type(String, Vec<String>),
 }
 
 impl Response {
@@ -348,6 +353,24 @@ impl Response {
                 })?;
                 Ok(Response::NumLogins(num))
             }
+            "TYPE" => {
+                let _device = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified TYPE device in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                let name = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified TYPE name in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                let types = args;
+                Ok(Response::Type(name, types))
+            }
             _ => Err(NutError::UnknownResponseType(cmd_name).into()),
         }
     }
@@ -439,6 +462,17 @@ impl Response {
     pub fn expect_numlogins(&self) -> crate::Result<i32> {
         if let Self::NumLogins(num) = &self {
             Ok(*num)
+        } else {
+            Err(NutError::UnexpectedResponse.into())
+        }
+    }
+
+    pub fn expect_type(&self) -> crate::Result<VariableDefinition> {
+        if let Self::Type(name, types) = &self {
+            VariableDefinition::try_from((
+                name.to_owned(),
+                types.iter().map(String::as_str).collect(),
+            ))
         } else {
             Err(NutError::UnexpectedResponse.into())
         }
@@ -698,6 +732,14 @@ implement_get_commands! {
         (
             { &["DESC", ups_name, variable] },
             { |row: Response| row.expect_desc() },
+        )
+    }
+
+    /// Queries the type of a UPS variable.
+    pub fn get_var_type(ups_name: &str, variable: &str) -> VariableDefinition {
+        (
+            { &["TYPE", ups_name, variable] },
+            { |row: Response| row.expect_type() },
         )
     }
 
