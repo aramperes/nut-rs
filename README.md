@@ -16,7 +16,7 @@ A [Network UPS Tools](https://github.com/networkupstools/nut) (NUT) client libra
 
 ## Getting Started
 
-You'll need a running instance of the NUT daemon (`upsd`) and
+You'll need a running instance of the NUT daemon (`upsd`, version >= 2.6.4) and
 a [compatible UPS device](https://networkupstools.org/stable-hcl.html)
 to use this library:
 
