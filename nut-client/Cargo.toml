@@ -28,7 +28,7 @@ async = ["tokio"]
 async-ssl = ["async", "tokio-rustls", "ssl"]
 
 # a feature gate for examples
-async-rt = ["tokio/rt-multi-thread", "tokio/macros"]
+async-rt = ["async", "tokio/rt-multi-thread", "tokio/macros"]
 
 [[example]]
 name = "async"

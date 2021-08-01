@@ -1,6 +1,6 @@
 use core::fmt;
 
-use crate::{ClientError, NutError};
+use crate::{ClientError, NutError, Variable};
 
 #[derive(Debug, Clone)]
 pub enum Command<'a> {
@@ -214,9 +214,9 @@ impl Response {
         }
     }
 
-    pub fn expect_var(&self) -> crate::Result<(String, String)> {
+    pub fn expect_var(&self) -> crate::Result<Variable> {
         if let Self::Var(name, value) = &self {
-            Ok((name.to_owned(), value.to_owned()))
+            Ok(Variable::parse(name, value.to_owned()))
         } else {
             Err(NutError::UnexpectedResponse.into())
         }
@@ -236,5 +236,197 @@ impl Response {
         } else {
             Err(NutError::UnexpectedResponse.into())
         }
+    }
+}
+
+/// A macro for implementing `LIST` commands.
+///
+/// Each function should return a 2-tuple with
+///     (1) the query to pass to `LIST`
+///     (2) a closure for mapping each `Response` row to the return type  
+macro_rules! implement_list_commands {
+    (
+        $(
+            $(#[$attr:meta])+
+            fn $name:ident($($argname:ident: $argty:ty),*) -> $retty:ty {
+                (
+                    $query:block,
+                    $mapper:block,
+                )
+            }
+        )*
+    ) => {
+        impl crate::blocking::Connection {
+            $(
+                $(#[$attr])*
+                pub fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
+                    match self {
+                        Self::Tcp(conn) => {
+                            conn.write_cmd(Command::List($query))?;
+                            let list = conn.read_list($query)?;
+                            list.into_iter().map($mapper).collect()
+                        },
+                    }
+                }
+            )*
+        }
+
+        #[cfg(feature = "async")]
+        impl crate::tokio::Connection {
+            $(
+                $(#[$attr])*
+                pub async fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
+                    match self {
+                        Self::Tcp(conn) => {
+                            conn.write_cmd(Command::List($query)).await?;
+                            let list = conn.read_list($query).await?;
+                            list.into_iter().map($mapper).collect()
+                        },
+                    }
+                }
+            )*
+        }
+    };
+}
+
+/// A macro for implementing `GET` commands.
+///
+/// Each function should return a 2-tuple with
+///     (1) the query to pass to `GET`
+///     (2) a closure for mapping the `Response` row to the return type
+macro_rules! implement_get_commands {
+    (
+        $(
+            $(#[$attr:meta])+
+            fn $name:ident($($argname:ident: $argty:ty),*) -> $retty:ty {
+                (
+                    $query:block,
+                    $mapper:block,
+                )
+            }
+        )*
+    ) => {
+        impl crate::blocking::Connection {
+            $(
+                $(#[$attr])*
+                pub fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
+                    match self {
+                        Self::Tcp(conn) => {
+                            conn.write_cmd(Command::Get($query))?;
+                            ($mapper)(conn.read_response()?)
+                        },
+                    }
+                }
+            )*
+        }
+
+        #[cfg(feature = "async")]
+        impl crate::tokio::Connection {
+            $(
+                $(#[$attr])*
+                pub async fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
+                    match self {
+                        Self::Tcp(conn) => {
+                            conn.write_cmd(Command::Get($query)).await?;
+                            ($mapper)(conn.read_response().await?)
+                        },
+                    }
+                }
+            )*
+        }
+    };
+}
+
+/// A macro for implementing simple/direct commands.
+///
+/// Each function should return a 2-tuple with
+///     (1) the command to pass
+///     (2) a closure for mapping the `String` row to the return type
+macro_rules! implement_simple_commands {
+    (
+        $(
+            $(#[$attr:meta])+
+            fn $name:ident($($argname:ident: $argty:ty),*) -> $retty:ty {
+                (
+                    $cmd:block,
+                    $mapper:block,
+                )
+            }
+        )*
+    ) => {
+        impl crate::blocking::Connection {
+            $(
+                $(#[$attr])*
+                pub fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
+                    match self {
+                        Self::Tcp(conn) => {
+                            conn.write_cmd($cmd)?;
+                            ($mapper)(conn.read_plain_response()?)
+                        },
+                    }
+                }
+            )*
+        }
+
+        #[cfg(feature = "async")]
+        impl crate::tokio::Connection {
+            $(
+                $(#[$attr])*
+                pub async fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
+                    match self {
+                        Self::Tcp(conn) => {
+                            conn.write_cmd($cmd).await?;
+                            ($mapper)(conn.read_plain_response().await?)
+                        },
+                    }
+                }
+            )*
+        }
+    };
+}
+
+implement_list_commands! {
+    /// Queries a list of UPS devices.
+    fn list_ups() -> Vec<(String, String)> {
+        (
+            { &["UPS"] },
+            { |row: Response| row.expect_ups() },
+        )
+    }
+
+    /// Queries a list of client IP addresses connected to the given device.
+    fn list_clients(ups_name: &str) -> Vec<String> {
+        (
+            { &["CLIENT", ups_name] },
+            { |row: Response| row.expect_client() },
+        )
+    }
+
+    /// Queries the list of variables for a UPS device.
+    fn list_vars(ups_name: &str) -> Vec<Variable> {
+        (
+            { &["VAR", ups_name] },
+            { |row: Response| row.expect_var() },
+        )
+    }
+}
+
+implement_get_commands! {
+    /// Queries one variable for a UPS device.
+    fn get_var(ups_name: &str, variable: &str) -> Variable {
+        (
+            { &["VAR", ups_name, variable] },
+            { |row: Response| row.expect_var() },
+        )
+    }
+}
+
+implement_simple_commands! {
+    /// Queries the network protocol version.
+    fn get_network_version() -> String {
+        (
+            { Command::NetworkVersion },
+            { |row: String| Ok(row) },
+        )
     }
 }

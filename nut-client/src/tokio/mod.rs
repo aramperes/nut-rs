@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use crate::cmd::{Command, Response};
 use crate::tokio::stream::ConnectionStream;
-use crate::{Config, Host, NutError, Variable};
+use crate::{Config, Host, NutError};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::TcpStream;
 
@@ -21,42 +21,6 @@ impl Connection {
             Host::Tcp(host) => Ok(Self::Tcp(
                 TcpConnection::new(config.clone(), &host.addr).await?,
             )),
-        }
-    }
-
-    /// Queries a list of UPS devices.
-    pub async fn list_ups(&mut self) -> crate::Result<Vec<(String, String)>> {
-        match self {
-            Self::Tcp(conn) => conn.list_ups().await,
-        }
-    }
-
-    /// Queries a list of client IP addresses connected to the given device.
-    pub async fn list_clients(&mut self, ups_name: &str) -> crate::Result<Vec<String>> {
-        match self {
-            Self::Tcp(conn) => conn.list_clients(ups_name).await,
-        }
-    }
-
-    /// Queries the list of variables for a UPS device.
-    pub async fn list_vars(&mut self, ups_name: &str) -> crate::Result<Vec<Variable>> {
-        match self {
-            Self::Tcp(conn) => Ok(conn
-                .list_vars(ups_name)
-                .await?
-                .into_iter()
-                .map(|(key, val)| Variable::parse(key.as_str(), val))
-                .collect()),
-        }
-    }
-
-    /// Queries one variable for a UPS device.
-    pub async fn get_var(&mut self, ups_name: &str, variable: &str) -> crate::Result<Variable> {
-        match self {
-            Self::Tcp(conn) => {
-                let var = conn.get_var(ups_name, variable).await?;
-                Ok(Variable::parse(var.0.as_str(), var.1))
-            }
         }
     }
 }
@@ -137,7 +101,8 @@ impl TcpConnection {
             self.stream = self.stream.upgrade_ssl(config, dns_name.as_ref()).await?;
 
             // Send a test command
-            self.get_network_version().await?;
+            self.write_cmd(Command::NetworkVersion).await?;
+            self.read_plain_response().await?;
         }
         Ok(self)
     }
@@ -162,48 +127,7 @@ impl TcpConnection {
         Ok(())
     }
 
-    async fn list_ups(&mut self) -> crate::Result<Vec<(String, String)>> {
-        let query = &["UPS"];
-        self.write_cmd(Command::List(query)).await?;
-
-        let list = self.read_list(query).await?;
-        list.into_iter().map(|row| row.expect_ups()).collect()
-    }
-
-    async fn list_clients(&mut self, ups_name: &str) -> crate::Result<Vec<String>> {
-        let query = &["CLIENT", ups_name];
-        self.write_cmd(Command::List(query)).await?;
-
-        let list = self.read_list(query).await?;
-        list.into_iter().map(|row| row.expect_client()).collect()
-    }
-
-    async fn list_vars(&mut self, ups_name: &str) -> crate::Result<Vec<(String, String)>> {
-        let query = &["VAR", ups_name];
-        self.write_cmd(Command::List(query)).await?;
-
-        let list = self.read_list(query).await?;
-        list.into_iter().map(|row| row.expect_var()).collect()
-    }
-
-    async fn get_var<'a>(
-        &mut self,
-        ups_name: &'a str,
-        variable: &'a str,
-    ) -> crate::Result<(String, String)> {
-        let query = &["VAR", ups_name, variable];
-        self.write_cmd(Command::Get(query)).await?;
-
-        self.read_response().await?.expect_var()
-    }
-
-    #[allow(dead_code)]
-    async fn get_network_version(&mut self) -> crate::Result<String> {
-        self.write_cmd(Command::NetworkVersion).await?;
-        self.read_plain_response().await
-    }
-
-    async fn write_cmd(&mut self, line: Command<'_>) -> crate::Result<()> {
+    pub(crate) async fn write_cmd(&mut self, line: Command<'_>) -> crate::Result<()> {
         let line = format!("{}\n", line);
         if self.config.debug {
             eprint!("DEBUG -> {}", line);
@@ -231,19 +155,19 @@ impl TcpConnection {
         Ok(args)
     }
 
-    async fn read_response(&mut self) -> crate::Result<Response> {
+    pub(crate) async fn read_response(&mut self) -> crate::Result<Response> {
         let mut reader = BufReader::new(&mut self.stream);
         let args = Self::parse_line(&mut reader, self.config.debug).await?;
         Response::from_args(args)
     }
 
-    async fn read_plain_response(&mut self) -> crate::Result<String> {
+    pub(crate) async fn read_plain_response(&mut self) -> crate::Result<String> {
         let mut reader = BufReader::new(&mut self.stream);
         let args = Self::parse_line(&mut reader, self.config.debug).await?;
         Ok(args.join(" "))
     }
 
-    async fn read_list(&mut self, query: &[&str]) -> crate::Result<Vec<Response>> {
+    pub(crate) async fn read_list(&mut self, query: &[&str]) -> crate::Result<Vec<Response>> {
         let mut reader = BufReader::new(&mut self.stream);
         let args = Self::parse_line(&mut reader, self.config.debug).await?;
 
