@@ -15,6 +15,8 @@ pub enum Command<'a> {
     StartTLS,
     /// Queries the network version.
     NetworkVersion,
+    /// Queries the server version
+    Version,
 }
 
 impl<'a> Command<'a> {
@@ -27,6 +29,7 @@ impl<'a> Command<'a> {
             Self::List(_) => "LIST",
             Self::StartTLS => "STARTTLS",
             Self::NetworkVersion => "NETVER",
+            Self::Version => "VER",
         }
     }
 
@@ -477,6 +480,14 @@ implement_simple_commands! {
     pub fn get_network_version() -> String {
         (
             { Command::NetworkVersion },
+            { |row: String| Ok(row) },
+        )
+    }
+
+    /// Queries the server NUT version.
+    pub fn get_server_version() -> String {
+        (
+            { Command::Version },
             { |row: String| Ok(row) },
         )
     }

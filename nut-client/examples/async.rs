@@ -25,6 +25,11 @@ async fn main() -> nut_client::Result<()> {
 
     let mut conn = Connection::new(&config).await?;
 
+    // Get server information
+    println!("NUT server:");
+    println!("\tVersion: {}", conn.get_server_version().await?);
+    println!("\tNetwork Version: {}", conn.get_network_version().await?);
+
     // Print a list of all UPS devices
     println!("Connected UPS devices:");
     for (name, description) in conn.list_ups().await? {

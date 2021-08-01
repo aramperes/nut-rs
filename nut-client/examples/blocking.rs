@@ -24,6 +24,11 @@ fn main() -> nut_client::Result<()> {
 
     let mut conn = Connection::new(&config)?;
 
+    // Get server information
+    println!("NUT server:");
+    println!("\tVersion: {}", conn.get_server_version()?);
+    println!("\tNetwork Version: {}", conn.get_network_version()?);
+
     // Print a list of all UPS devices
     println!("Connected UPS devices:");
     for (name, description) in conn.list_ups()? {
