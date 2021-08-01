@@ -84,6 +84,10 @@ pub enum Response {
     ///
     /// Params: (command description)
     CmdDesc(String),
+    /// A UPS description (UPSDESC) response.
+    ///
+    /// Params: (UPS description)
+    UpsDesc(String),
     /// A mutable variable (RW) response.
     ///
     /// Params: (var name, var value)
@@ -281,6 +285,23 @@ impl Response {
                 }?;
                 Ok(Response::CmdDesc(desc))
             }
+            "UPSDESC" => {
+                let _device = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified UPSDESC device in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                let desc = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified UPSDESC description in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                Ok(Response::UpsDesc(desc))
+            }
             "DESC" => {
                 let _device = if args.is_empty() {
                     Err(ClientError::from(NutError::Generic(
@@ -393,6 +414,14 @@ impl Response {
 
     pub fn expect_cmddesc(&self) -> crate::Result<String> {
         if let Self::CmdDesc(description) = &self {
+            Ok(description.to_owned())
+        } else {
+            Err(NutError::UnexpectedResponse.into())
+        }
+    }
+
+    pub fn expect_upsdesc(&self) -> crate::Result<String> {
+        if let Self::UpsDesc(description) = &self {
             Ok(description.to_owned())
         } else {
             Err(NutError::UnexpectedResponse.into())
@@ -677,6 +706,14 @@ implement_get_commands! {
         (
             { &["CMDDESC", ups_name, variable] },
             { |row: Response| row.expect_cmddesc() },
+        )
+    }
+
+    /// Queries the description of a UPS device.
+    pub fn get_ups_description(ups_name: &str) -> String {
+        (
+            { &["UPSDESC", ups_name] },
+            { |row: Response| row.expect_upsdesc() },
         )
     }
 
