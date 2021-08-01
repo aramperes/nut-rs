@@ -45,7 +45,8 @@ async fn main() -> nut_client::Result<()> {
         // List UPS commands
         println!("\t  Commands:");
         for cmd in conn.list_commands(&name).await? {
-            println!("\t\t- {}", cmd);
+            let description = conn.get_command_description(&name, &cmd).await?;
+            println!("\t\t- {} ({})", cmd, description);
         }
     }
 

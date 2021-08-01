@@ -80,6 +80,10 @@ pub enum Response {
     ///
     /// Params: (command name)
     Cmd(String),
+    /// A command description (CMDDESC) response.
+    ///
+    /// Params: (command description)
+    CmdDesc(String),
 }
 
 impl Response {
@@ -217,6 +221,30 @@ impl Response {
                 }?;
                 Ok(Response::Cmd(name))
             }
+            "CMDDESC" => {
+                let _device = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified CMDDESC device in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                let _name = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified CMDDESC name in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                let desc = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified CMDDESC description in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                Ok(Response::CmdDesc(desc))
+            }
             _ => Err(NutError::UnknownResponseType(cmd_name).into()),
         }
     }
@@ -268,6 +296,14 @@ impl Response {
     pub fn expect_cmd(&self) -> crate::Result<String> {
         if let Self::Cmd(name) = &self {
             Ok(name.to_owned())
+        } else {
+            Err(NutError::UnexpectedResponse.into())
+        }
+    }
+
+    pub fn expect_cmddesc(&self) -> crate::Result<String> {
+        if let Self::CmdDesc(description) = &self {
+            Ok(description.to_owned())
         } else {
             Err(NutError::UnexpectedResponse.into())
         }
@@ -511,6 +547,14 @@ implement_get_commands! {
         (
             { &["VAR", ups_name, variable] },
             { |row: Response| row.expect_var() },
+        )
+    }
+
+    /// Queries the description of a UPS command.
+    pub fn get_command_description(ups_name: &str, variable: &str) -> String {
+        (
+            { &["CMDDESC", ups_name, variable] },
+            { |row: Response| row.expect_cmddesc() },
         )
     }
 }

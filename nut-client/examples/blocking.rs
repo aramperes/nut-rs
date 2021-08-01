@@ -44,7 +44,8 @@ fn main() -> nut_client::Result<()> {
         // List UPS commands
         println!("\t  Commands:");
         for cmd in conn.list_commands(&name)? {
-            println!("\t\t- {}", cmd);
+            let description = conn.get_command_description(&name, &cmd)?;
+            println!("\t\t- {} ({})", cmd, description);
         }
     }
 
