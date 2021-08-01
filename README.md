@@ -1,8 +1,8 @@
-# nut-client
+# rups
 
-[![crates.io](https://img.shields.io/crates/v/nut-client.svg)](https://crates.io/crates/nut-client)
-[![Documentation](https://docs.rs/nut-client/badge.svg)](https://docs.rs/nut-client)
-[![MIT licensed](https://img.shields.io/crates/l/nut-client.svg)](./LICENSE)
+[![crates.io](https://img.shields.io/crates/v/rups.svg)](https://crates.io/crates/rups)
+[![Documentation](https://docs.rs/rups/badge.svg)](https://docs.rs/rups)
+[![MIT licensed](https://img.shields.io/crates/l/rups.svg)](./LICENSE)
 [![CI](https://github.com/aramperes/nut-client-rs/workflows/CI/badge.svg)](https://github.com/aramperes/nut-client-rs/actions?query=workflow%3ACI)
 
 A [Network UPS Tools](https://github.com/networkupstools/nut) (NUT) client library for Rust.
@@ -38,15 +38,15 @@ built-in [upsc](https://networkupstools.org/docs/man/upsc.html) tool.
 Below is a sample program using this library (`cargo run --example blocking`).
 
 You can also run the async version of this code using
-`cargo run --example async --features async-rt` (source: `nut-client/examples/async.rs`).
+`cargo run --example async --features async-rt` (source: `rups/examples/async.rs`).
 
 ```rust
-// nut-client/examples/blocking.rs
+// rups/examples/blocking.rs
 
 use std::env;
 
-use nut_client::blocking::Connection;
-use nut_client::{Auth, ConfigBuilder};
+use rups::blocking::Connection;
+use rups::{Auth, ConfigBuilder};
 use std::convert::TryInto;
 
 fn main() -> nut_client::Result<()> {
@@ -100,7 +100,11 @@ If the server is using a self-signed certificate, and you'd like to ignore the s
 
 ## Async (Tokio)
 
-The `nut-client` library supports async network requests. This requires the `async` feature, which uses Tokio v1 under
-the hood.
+The `rups` library supports async network requests. This requires the `async` feature, which uses Tokio v1 under the
+hood.
 
 For SSL support, you must use the `async-ssl` feature as well.
+
+## Pronunciation
+
+> r-oops

@@ -1,10 +1,11 @@
-use std::convert::TryInto;
 use std::env;
 
-use nut_client::blocking::Connection;
-use nut_client::{Auth, ConfigBuilder};
+use rups::tokio::Connection;
+use rups::{Auth, ConfigBuilder};
+use std::convert::TryInto;
 
-fn main() -> nut_client::Result<()> {
+#[tokio::main]
+async fn main() -> rups::Result<()> {
     let host = env::var("NUT_HOST").unwrap_or_else(|_| "localhost".into());
     let port = env::var("NUT_PORT")
         .ok()
@@ -22,48 +23,51 @@ fn main() -> nut_client::Result<()> {
         .with_debug(false) // Turn this on for debugging network chatter
         .build();
 
-    let mut conn = Connection::new(&config)?;
+    let mut conn = Connection::new(&config).await?;
 
     // Get server information
     println!("NUT server:");
-    println!("\tVersion: {}", conn.get_server_version()?);
-    println!("\tNetwork Version: {}", conn.get_network_version()?);
+    println!("\tVersion: {}", conn.get_server_version().await?);
+    println!("\tNetwork Version: {}", conn.get_network_version().await?);
 
     // Print a list of all UPS devices
     println!("Connected UPS devices:");
-    for (name, description) in conn.list_ups()? {
+    for (name, description) in conn.list_ups().await? {
         println!("\t- Name: {}", name);
         println!("\t  Description: {}", description);
-        println!("\t  Number of logins: {}", conn.get_num_logins(&name)?);
+        println!(
+            "\t  Number of logins: {}",
+            conn.get_num_logins(&name).await?
+        );
 
         // Get list of mutable variables
-        let mutable_vars = conn.list_mutable_vars(&name)?;
+        let mutable_vars = conn.list_mutable_vars(&name).await?;
 
         // List UPS variables (key = val)
         println!("\t  Mutable Variables:");
         for var in mutable_vars.iter() {
             println!("\t\t- {}", var);
-            println!("\t\t  {:?}", conn.get_var_type(&name, var.name())?);
+            println!("\t\t  {:?}", conn.get_var_type(&name, var.name()).await?);
         }
 
         // List UPS immutable properties (key = val)
         println!("\t  Immutable Properties:");
-        for var in conn.list_vars(&name)? {
+        for var in conn.list_vars(&name).await? {
             if mutable_vars.iter().any(|v| v.name() == var.name()) {
                 continue;
             }
             println!("\t\t- {}", var);
-            println!("\t\t  {:?}", conn.get_var_type(&name, var.name())?);
+            println!("\t\t  {:?}", conn.get_var_type(&name, var.name()).await?);
         }
 
         // List UPS commands
         println!("\t  Commands:");
-        for cmd in conn.list_commands(&name)? {
-            let description = conn.get_command_description(&name, &cmd)?;
+        for cmd in conn.list_commands(&name).await? {
+            let description = conn.get_command_description(&name, &cmd).await?;
             println!("\t\t- {} ({})", cmd, description);
         }
     }
 
     // Gracefully shut down the connection using the `LOGOUT` command
-    conn.close()
+    conn.close().await
 }

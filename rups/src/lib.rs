@@ -1,8 +1,8 @@
 #![deny(missing_docs)]
 
-//! # nut-client
+//! # rups
 //!
-//! The `nut-client` crate provides a network client implementation
+//! The `rups` crate provides a network client implementation
 //! for Network UPS Tools (NUT) servers.
 
 pub use config::*;

@@ -172,18 +172,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "nut-client"
-version = "0.4.0"
-dependencies = [
- "rustls",
- "shell-words",
- "tokio",
- "tokio-rustls",
- "webpki",
- "webpki-roots",
-]
-
-[[package]]
 name = "once_cell"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -229,12 +217,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "rups"
+version = "0.5.0"
+dependencies = [
+ "rustls",
+ "shell-words",
+ "tokio",
+ "tokio-rustls",
+ "webpki",
+ "webpki-roots",
+]
+
+[[package]]
 name = "rupsc"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "anyhow",
  "clap",
- "nut-client",
+ "rups",
 ]
 
 [[package]]

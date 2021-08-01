@@ -1,7 +1,7 @@
 use anyhow::Context;
 
-use nut_client::blocking::Connection;
-use nut_client::Config;
+use rups::blocking::Connection;
+use rups::Config;
 
 /// Lists each UPS on the upsd server, one per line.
 pub fn list_devices(config: Config, with_description: bool) -> anyhow::Result<()> {

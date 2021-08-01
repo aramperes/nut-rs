@@ -64,10 +64,10 @@ impl<'a> TryFrom<&'a str> for UpsdName<'a> {
     }
 }
 
-impl<'a> TryInto<nut_client::Host> for UpsdName<'a> {
+impl<'a> TryInto<rups::Host> for UpsdName<'a> {
     type Error = anyhow::Error;
 
-    fn try_into(self) -> anyhow::Result<nut_client::Host> {
+    fn try_into(self) -> anyhow::Result<rups::Host> {
         (self.hostname.to_owned(), self.port)
             .try_into()
             .with_context(|| "Invalid hostname/port")

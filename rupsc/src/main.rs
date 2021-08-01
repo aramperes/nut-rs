@@ -82,7 +82,7 @@ fn main() -> anyhow::Result<()> {
     let ssl = insecure_ssl || args.is_present("ssl");
 
     let host = server.try_into()?;
-    let config = nut_client::ConfigBuilder::new()
+    let config = rups::ConfigBuilder::new()
         .with_host(host)
         .with_debug(debug)
         .with_ssl(ssl)
