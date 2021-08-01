@@ -2,7 +2,7 @@
 
 [![crates.io](https://img.shields.io/crates/v/rupsc.svg)](https://crates.io/crates/rupsc)
 [![Documentation](https://docs.rs/rups/badge.svg)](https://docs.rs/rups)
-[![MIT licensed](https://img.shields.io/crates/l/rupsc.svg)](./LICENSE)
+[![GPL-3.0 or later](https://img.shields.io/crates/l/rupsc.svg)](./LICENSE)
 [![CI](https://github.com/aramperes/nut-client-rs/workflows/CI/badge.svg)](https://github.com/aramperes/nut-client-rs/actions?query=workflow%3ACI)
 
 A Rust clone of [upsc](https://networkupstools.org/docs/man/upsc.html),

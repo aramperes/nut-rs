@@ -1,6 +1,6 @@
 [package]
 name = "rupsc"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Aram Peres <aram.peres@wavy.fm>"]
 edition = "2018"
 description = "A demo program to display UPS variables"
@@ -8,7 +8,7 @@ categories = ["network-programming"]
 keywords = ["ups", "nut"]
 repository = "https://github.com/aramperes/nut-client-rs"
 readme = "README.md"
-license = "MIT"
+license = "GPL-3.0-or-later"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -17,6 +17,6 @@ clap = "2.33.3"
 anyhow = "1"
 
 [dependencies.rups]
-version = "0.5.0"
+version = "0.5.1"
 path = "../rups"
 features = ["ssl"]

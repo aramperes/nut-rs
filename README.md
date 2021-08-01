@@ -108,3 +108,10 @@ For SSL support, you must use the `async-ssl` feature as well.
 ## Pronunciation
 
 > r-oops
+
+## License
+
+The crates in this repository are licensed as such:
+
+- `rups`: MIT License, see `./LICENSE`
+- `rupsc`: GPL-3.0 or later, see `./rupsc/LICENSE`
