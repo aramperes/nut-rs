@@ -92,6 +92,10 @@ pub enum Response {
     ///
     /// Params: (variable description)
     Desc(String),
+    /// A NUMLOGINS response.
+    ///
+    /// Params (number of logins)
+    NumLogins(i32),
 }
 
 impl Response {
@@ -301,6 +305,28 @@ impl Response {
                 }?;
                 Ok(Response::Desc(desc))
             }
+            "NUMLOGINS" => {
+                let _device = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified NUMLOGINS device in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                let num = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified NUMLOGINS number in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                let num = num.parse::<i32>().map_err(|_| {
+                    ClientError::from(NutError::Generic(
+                        "Invalid NUMLOGINS number in response".into(),
+                    ))
+                })?;
+                Ok(Response::NumLogins(num))
+            }
             _ => Err(NutError::UnknownResponseType(cmd_name).into()),
         }
     }
@@ -376,6 +402,14 @@ impl Response {
     pub fn expect_desc(&self) -> crate::Result<String> {
         if let Self::Desc(description) = &self {
             Ok(description.to_owned())
+        } else {
+            Err(NutError::UnexpectedResponse.into())
+        }
+    }
+
+    pub fn expect_numlogins(&self) -> crate::Result<i32> {
+        if let Self::NumLogins(num) = &self {
+            Ok(*num)
         } else {
             Err(NutError::UnexpectedResponse.into())
         }
@@ -643,6 +677,14 @@ implement_get_commands! {
         (
             { &["CMDDESC", ups_name, variable] },
             { |row: Response| row.expect_cmddesc() },
+        )
+    }
+
+    /// Queries the number of logins to the specified UPS.
+    pub fn get_num_logins(ups_name: &str) -> i32 {
+        (
+            { &["NUMLOGINS", ups_name] },
+            { |row: Response| row.expect_numlogins() },
         )
     }
 }

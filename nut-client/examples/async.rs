@@ -35,6 +35,10 @@ async fn main() -> nut_client::Result<()> {
     for (name, description) in conn.list_ups().await? {
         println!("\t- Name: {}", name);
         println!("\t  Description: {}", description);
+        println!(
+            "\t  Number of logins: {}",
+            conn.get_num_logins(&name).await?
+        );
 
         // Get list of mutable variables
         let mutable_vars = conn.list_mutable_vars(&name).await?;
