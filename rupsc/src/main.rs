@@ -8,9 +8,9 @@ use core::convert::TryInto;
 use anyhow::Context;
 use clap::{App, Arg};
 
-use crate::parser::UpsdName;
+use rups::UpsdName;
+
 mod cmd;
-mod parser;
 
 fn main() -> anyhow::Result<()> {
     let args = App::new(clap::crate_name!())
@@ -72,7 +72,7 @@ fn main() -> anyhow::Result<()> {
         )
         .get_matches();
 
-    let server: parser::UpsdName = args.value_of("upsd-server").map_or_else(
+    let server: UpsdName = args.value_of("upsd-server").map_or_else(
         || Ok(UpsdName::default()),
         |s| s.try_into().with_context(|| "Invalid upsd server name"),
     )?;

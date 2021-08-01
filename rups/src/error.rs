@@ -36,8 +36,15 @@ impl fmt::Display for NutError {
                 "Given hostname cannot be used for a strict SSL connection"
             ),
             Self::FeatureNotConfigured => write!(f, "Feature not configured by server"),
-            Self::Generic(msg) => write!(f, "Internal client error: {}", msg),
+            Self::Generic(msg) => write!(f, "Client error: {}", msg),
         }
+    }
+}
+
+impl NutError {
+    /// Constructs a generic rups error.
+    pub fn generic<T: ToString>(message: T) -> Self {
+        Self::Generic(message.to_string())
     }
 }
 
@@ -50,6 +57,13 @@ pub enum ClientError {
     Io(io::Error),
     /// Encapsulates NUT and client-specific errors.
     Nut(NutError),
+}
+
+impl ClientError {
+    /// Constructs a generic rups error.
+    pub fn generic<T: ToString>(message: T) -> Self {
+        NutError::generic(message.to_string()).into()
+    }
 }
 
 impl fmt::Display for ClientError {

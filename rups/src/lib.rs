@@ -7,6 +7,7 @@
 
 pub use config::*;
 pub use error::*;
+pub use util::*;
 pub use var::*;
 
 /// Blocking client implementation for NUT.
@@ -20,4 +21,5 @@ mod config;
 mod error;
 #[cfg(feature = "ssl")]
 mod ssl;
+mod util;
 mod var;

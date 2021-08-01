@@ -148,7 +148,7 @@ impl TcpConnection {
 
         // Parse args by splitting whitespace, minding quotes for args with multiple words
         let args = shell_words::split(&raw)
-            .map_err(|e| NutError::Generic(format!("Parsing server response failed: {}", e)))?;
+            .map_err(|e| NutError::generic(format!("Parsing server response failed: {}", e)))?;
 
         Ok(args)
     }

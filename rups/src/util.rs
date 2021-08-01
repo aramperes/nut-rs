@@ -1,17 +1,21 @@
-use anyhow::Context;
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
 
+/// The default upsd hostname.
 pub const DEFAULT_HOSTNAME: &str = "localhost";
+/// The default upsd port.
 pub const DEFAULT_PORT: u16 = 3493;
 
-/// Connection information for a upsd server.
+/// TCP connection information for a upsd server.
 ///
 /// The upsname is optional depending on context.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct UpsdName<'a> {
+    /// The name of the ups device, if specified.
     pub upsname: Option<&'a str>,
+    /// The hostname of the upsd server.
     pub hostname: &'a str,
+    /// The port of the upsd server.
     pub port: u16,
 }
 
@@ -26,9 +30,9 @@ impl<'a> Default for UpsdName<'a> {
 }
 
 impl<'a> TryFrom<&'a str> for UpsdName<'a> {
-    type Error = anyhow::Error;
+    type Error = crate::ClientError;
 
-    fn try_from(value: &'a str) -> anyhow::Result<UpsdName<'a>> {
+    fn try_from(value: &'a str) -> crate::Result<UpsdName<'a>> {
         let mut upsname: Option<&str> = None;
         let mut hostname = DEFAULT_HOSTNAME;
         let mut port = DEFAULT_PORT;
@@ -40,7 +44,7 @@ impl<'a> TryFrom<&'a str> for UpsdName<'a> {
                 .next()
                 .unwrap()
                 .parse::<u16>()
-                .with_context(|| "invalid port number")?;
+                .map_err(|_| crate::ClientError::generic("Invalid port number"))?;
             if prefix.contains('@') {
                 let mut split = prefix.splitn(2, '@');
                 upsname = Some(split.next().unwrap());
@@ -64,13 +68,13 @@ impl<'a> TryFrom<&'a str> for UpsdName<'a> {
     }
 }
 
-impl<'a> TryInto<rups::Host> for UpsdName<'a> {
-    type Error = anyhow::Error;
+impl<'a> TryInto<crate::Host> for UpsdName<'a> {
+    type Error = crate::ClientError;
 
-    fn try_into(self) -> anyhow::Result<rups::Host> {
+    fn try_into(self) -> crate::Result<crate::Host> {
         (self.hostname.to_owned(), self.port)
             .try_into()
-            .with_context(|| "Invalid hostname/port")
+            .map_err(|_| crate::ClientError::generic("Invalid hostname/port"))
     }
 }
 

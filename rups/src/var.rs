@@ -200,17 +200,13 @@ impl TryFrom<&str> for VariableType {
                         .nth(1)
                         .map(|s| s.parse().ok())
                         .flatten()
-                        .ok_or_else(|| {
-                            crate::ClientError::Nut(crate::NutError::Generic(
-                                "Invalid STRING definition".into(),
-                            ))
-                        })?;
+                        .ok_or_else(|| crate::ClientError::generic("Invalid STRING definition"))?;
                     Ok(Self::String(size))
                 } else {
-                    Err(crate::ClientError::Nut(crate::NutError::Generic(format!(
+                    Err(crate::ClientError::generic(format!(
                         "Unrecognized variable type: {}",
                         value
-                    ))))
+                    )))
                 }
             }
         }
