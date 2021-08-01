@@ -94,7 +94,8 @@ impl TcpConnection {
             self.stream = self.stream.upgrade_ssl(sess)?;
 
             // Send a test command
-            self.get_network_version()?;
+            self.write_cmd(Command::NetworkVersion)?;
+            self.read_plain_response()?;
         }
         Ok(self)
     }
@@ -117,12 +118,6 @@ impl TcpConnection {
             }
         }
         Ok(())
-    }
-
-    #[allow(dead_code)]
-    fn get_network_version(&mut self) -> crate::Result<String> {
-        self.write_cmd(Command::NetworkVersion)?;
-        self.read_plain_response()
     }
 
     pub(crate) fn write_cmd(&mut self, line: Command) -> crate::Result<()> {

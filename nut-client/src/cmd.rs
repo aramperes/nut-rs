@@ -337,6 +337,54 @@ macro_rules! implement_get_commands {
     };
 }
 
+/// A macro for implementing simple/direct commands.
+///
+/// Each function should return a 2-tuple with
+///     (1) the command to pass
+///     (2) a closure for mapping the `String` row to the return type
+macro_rules! implement_simple_commands {
+    (
+        $(
+            $(#[$attr:meta])+
+            fn $name:ident($($argname:ident: $argty:ty),*) -> $retty:ty {
+                (
+                    $cmd:block,
+                    $mapper:block,
+                )
+            }
+        )*
+    ) => {
+        impl crate::blocking::Connection {
+            $(
+                $(#[$attr])*
+                pub fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
+                    match self {
+                        Self::Tcp(conn) => {
+                            conn.write_cmd($cmd)?;
+                            ($mapper)(conn.read_plain_response()?)
+                        },
+                    }
+                }
+            )*
+        }
+
+        #[cfg(feature = "async")]
+        impl crate::tokio::Connection {
+            $(
+                $(#[$attr])*
+                pub async fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
+                    match self {
+                        Self::Tcp(conn) => {
+                            conn.write_cmd($cmd).await?;
+                            ($mapper)(conn.read_plain_response().await?)
+                        },
+                    }
+                }
+            )*
+        }
+    };
+}
+
 implement_list_commands! {
     /// Queries a list of UPS devices.
     fn list_ups() -> Vec<(String, String)> {
@@ -369,6 +417,16 @@ implement_get_commands! {
         (
             { &["VAR", ups_name, variable] },
             { |row: Response| row.expect_var() },
+        )
+    }
+}
+
+implement_simple_commands! {
+    /// Queries the network protocol version.
+    fn get_network_version() -> String {
+        (
+            { Command::NetworkVersion },
+            { |row: String| Ok(row) },
         )
     }
 }

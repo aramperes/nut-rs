@@ -101,7 +101,8 @@ impl TcpConnection {
             self.stream = self.stream.upgrade_ssl(config, dns_name.as_ref()).await?;
 
             // Send a test command
-            self.get_network_version().await?;
+            self.write_cmd(Command::NetworkVersion).await?;
+            self.read_plain_response().await?;
         }
         Ok(self)
     }
@@ -124,12 +125,6 @@ impl TcpConnection {
             }
         }
         Ok(())
-    }
-
-    #[allow(dead_code)]
-    async fn get_network_version(&mut self) -> crate::Result<String> {
-        self.write_cmd(Command::NetworkVersion).await?;
-        self.read_plain_response().await
     }
 
     pub(crate) async fn write_cmd(&mut self, line: Command<'_>) -> crate::Result<()> {
