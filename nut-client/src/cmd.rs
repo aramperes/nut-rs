@@ -214,9 +214,9 @@ impl Response {
         }
     }
 
-    pub fn expect_var(&self) -> crate::Result<(String, String)> {
+    pub fn expect_var(&self) -> crate::Result<Variable> {
         if let Self::Var(name, value) = &self {
-            Ok((name.to_owned(), value.to_owned()))
+            Ok(Variable::parse(name, value.to_owned()))
         } else {
             Err(NutError::UnexpectedResponse.into())
         }
@@ -289,12 +289,60 @@ macro_rules! implement_list_commands {
     };
 }
 
+/// A macro for implementing `GET` commands.
+///
+/// Each function should return a 2-tuple with
+///     (1) the query to pass to `GET`
+///     (2) a closure for mapping the `Response` row to the return type
+macro_rules! implement_get_commands {
+    (
+        $(
+            $(#[$attr:meta])+
+            fn $name:ident($($argname:ident: $argty:ty),*) -> $retty:ty {
+                (
+                    $query:block,
+                    $mapper:block,
+                )
+            }
+        )*
+    ) => {
+        impl crate::blocking::Connection {
+            $(
+                $(#[$attr])*
+                pub fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
+                    match self {
+                        Self::Tcp(conn) => {
+                            conn.write_cmd(Command::Get($query))?;
+                            ($mapper)(conn.read_response()?)
+                        },
+                    }
+                }
+            )*
+        }
+
+        #[cfg(feature = "async")]
+        impl crate::tokio::Connection {
+            $(
+                $(#[$attr])*
+                pub async fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
+                    match self {
+                        Self::Tcp(conn) => {
+                            conn.write_cmd(Command::Get($query)).await?;
+                            ($mapper)(conn.read_response().await?)
+                        },
+                    }
+                }
+            )*
+        }
+    };
+}
+
 implement_list_commands! {
     /// Queries a list of UPS devices.
     fn list_ups() -> Vec<(String, String)> {
         (
             { &["UPS"] },
-            { |row| row.expect_ups() },
+            { |row: Response| row.expect_ups() },
         )
     }
 
@@ -302,7 +350,7 @@ implement_list_commands! {
     fn list_clients(ups_name: &str) -> Vec<String> {
         (
             { &["CLIENT", ups_name] },
-            { |row| row.expect_client() },
+            { |row: Response| row.expect_client() },
         )
     }
 
@@ -310,7 +358,17 @@ implement_list_commands! {
     fn list_vars(ups_name: &str) -> Vec<Variable> {
         (
             { &["VAR", ups_name] },
-            { |row| row.expect_var().map(|var| Variable::parse(var.0.as_str(), var.1)) },
+            { |row: Response| row.expect_var() },
+        )
+    }
+}
+
+implement_get_commands! {
+    /// Queries one variable for a UPS device.
+    fn get_var(ups_name: &str, variable: &str) -> Variable {
+        (
+            { &["VAR", ups_name, variable] },
+            { |row: Response| row.expect_var() },
         )
     }
 }

@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use crate::cmd::{Command, Response};
 use crate::tokio::stream::ConnectionStream;
-use crate::{Config, Host, NutError, Variable};
+use crate::{Config, Host, NutError};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::TcpStream;
 
@@ -21,16 +21,6 @@ impl Connection {
             Host::Tcp(host) => Ok(Self::Tcp(
                 TcpConnection::new(config.clone(), &host.addr).await?,
             )),
-        }
-    }
-
-    /// Queries one variable for a UPS device.
-    pub async fn get_var(&mut self, ups_name: &str, variable: &str) -> crate::Result<Variable> {
-        match self {
-            Self::Tcp(conn) => {
-                let var = conn.get_var(ups_name, variable).await?;
-                Ok(Variable::parse(var.0.as_str(), var.1))
-            }
         }
     }
 }
@@ -136,17 +126,6 @@ impl TcpConnection {
         Ok(())
     }
 
-    async fn get_var<'a>(
-        &mut self,
-        ups_name: &'a str,
-        variable: &'a str,
-    ) -> crate::Result<(String, String)> {
-        let query = &["VAR", ups_name, variable];
-        self.write_cmd(Command::Get(query)).await?;
-
-        self.read_response().await?.expect_var()
-    }
-
     #[allow(dead_code)]
     async fn get_network_version(&mut self) -> crate::Result<String> {
         self.write_cmd(Command::NetworkVersion).await?;
@@ -181,13 +160,13 @@ impl TcpConnection {
         Ok(args)
     }
 
-    async fn read_response(&mut self) -> crate::Result<Response> {
+    pub(crate) async fn read_response(&mut self) -> crate::Result<Response> {
         let mut reader = BufReader::new(&mut self.stream);
         let args = Self::parse_line(&mut reader, self.config.debug).await?;
         Response::from_args(args)
     }
 
-    async fn read_plain_response(&mut self) -> crate::Result<String> {
+    pub(crate) async fn read_plain_response(&mut self) -> crate::Result<String> {
         let mut reader = BufReader::new(&mut self.stream);
         let args = Self::parse_line(&mut reader, self.config.debug).await?;
         Ok(args.join(" "))

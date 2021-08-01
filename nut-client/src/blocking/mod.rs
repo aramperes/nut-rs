@@ -3,7 +3,7 @@ use std::net::{SocketAddr, TcpStream};
 
 use crate::blocking::stream::ConnectionStream;
 use crate::cmd::{Command, Response};
-use crate::{ClientError, Config, Host, NutError, Variable};
+use crate::{ClientError, Config, Host, NutError};
 
 mod stream;
 
@@ -18,16 +18,6 @@ impl Connection {
     pub fn new(config: &Config) -> crate::Result<Self> {
         match &config.host {
             Host::Tcp(host) => Ok(Self::Tcp(TcpConnection::new(config.clone(), &host.addr)?)),
-        }
-    }
-
-    /// Queries one variable for a UPS device.
-    pub fn get_var(&mut self, ups_name: &str, variable: &str) -> crate::Result<Variable> {
-        match self {
-            Self::Tcp(conn) => {
-                let var = conn.get_var(ups_name, variable)?;
-                Ok(Variable::parse(var.0.as_str(), var.1))
-            }
         }
     }
 }
@@ -129,13 +119,6 @@ impl TcpConnection {
         Ok(())
     }
 
-    fn get_var(&mut self, ups_name: &str, variable: &str) -> crate::Result<(String, String)> {
-        let query = &["VAR", ups_name, variable];
-        self.write_cmd(Command::Get(query))?;
-
-        self.read_response()?.expect_var()
-    }
-
     #[allow(dead_code)]
     fn get_network_version(&mut self) -> crate::Result<String> {
         self.write_cmd(Command::NetworkVersion)?;
@@ -170,13 +153,13 @@ impl TcpConnection {
         Ok(args)
     }
 
-    fn read_response(&mut self) -> crate::Result<Response> {
+    pub(crate) fn read_response(&mut self) -> crate::Result<Response> {
         let mut reader = BufReader::new(&mut self.stream);
         let args = Self::parse_line(&mut reader, self.config.debug)?;
         Response::from_args(args)
     }
 
-    fn read_plain_response(&mut self) -> crate::Result<String> {
+    pub(crate) fn read_plain_response(&mut self) -> crate::Result<String> {
         let mut reader = BufReader::new(&mut self.stream);
         let args = Self::parse_line(&mut reader, self.config.debug)?;
         Ok(args.join(" "))
