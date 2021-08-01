@@ -17,11 +17,28 @@ pub enum Connection {
 impl Connection {
     /// Initializes a connection to a NUT server (upsd).
     pub async fn new(config: &Config) -> crate::Result<Self> {
-        match &config.host {
-            Host::Tcp(host) => Ok(Self::Tcp(
-                TcpConnection::new(config.clone(), &host.addr).await?,
-            )),
+        let mut conn = match &config.host {
+            Host::Tcp(host) => Self::Tcp(TcpConnection::new(config.clone(), &host.addr).await?),
+        };
+
+        conn.get_network_version().await?;
+        conn.login(config).await?;
+
+        Ok(conn)
+    }
+
+    /// Sends username and password, as applicable.
+    async fn login(&mut self, config: &Config) -> crate::Result<()> {
+        if let Some(auth) = config.auth.clone() {
+            // Pass username and check for 'OK'
+            self.set_username(&auth.username).await?;
+
+            // Pass password and check for 'OK'
+            if let Some(password) = &auth.password {
+                self.set_password(password).await?;
+            }
         }
+        Ok(())
     }
 }
 
@@ -39,13 +56,7 @@ impl TcpConnection {
             config,
             stream: ConnectionStream::Plain(tcp_stream),
         };
-
-        // Initialize SSL connection
         connection = connection.enable_ssl().await?;
-
-        // Attempt login using `config.auth`
-        connection.login().await?;
-
         Ok(connection)
     }
 
@@ -99,10 +110,6 @@ impl TcpConnection {
 
             // Wrap and override the TCP stream
             self.stream = self.stream.upgrade_ssl(config, dns_name.as_ref()).await?;
-
-            // Send a test command
-            self.write_cmd(Command::NetworkVersion).await?;
-            self.read_plain_response().await?;
         }
         Ok(self)
     }
@@ -110,21 +117,6 @@ impl TcpConnection {
     #[cfg(not(feature = "async-ssl"))]
     async fn enable_ssl(self) -> crate::Result<Self> {
         Ok(self)
-    }
-
-    async fn login(&mut self) -> crate::Result<()> {
-        if let Some(auth) = self.config.auth.clone() {
-            // Pass username and check for 'OK'
-            self.write_cmd(Command::SetUsername(&auth.username)).await?;
-            self.read_response().await?.expect_ok()?;
-
-            // Pass password and check for 'OK'
-            if let Some(password) = &auth.password {
-                self.write_cmd(Command::SetPassword(password)).await?;
-                self.read_response().await?.expect_ok()?;
-            }
-        }
-        Ok(())
     }
 
     pub(crate) async fn write_cmd(&mut self, line: Command<'_>) -> crate::Result<()> {

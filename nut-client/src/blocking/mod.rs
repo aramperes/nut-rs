@@ -16,9 +16,28 @@ pub enum Connection {
 impl Connection {
     /// Initializes a connection to a NUT server (upsd).
     pub fn new(config: &Config) -> crate::Result<Self> {
-        match &config.host {
-            Host::Tcp(host) => Ok(Self::Tcp(TcpConnection::new(config.clone(), &host.addr)?)),
+        let mut conn = match &config.host {
+            Host::Tcp(host) => Self::Tcp(TcpConnection::new(config.clone(), &host.addr)?),
+        };
+
+        conn.get_network_version()?;
+        conn.login(config)?;
+
+        Ok(conn)
+    }
+
+    /// Sends username and password, as applicable.
+    fn login(&mut self, config: &Config) -> crate::Result<()> {
+        if let Some(auth) = config.auth.clone() {
+            // Pass username and check for 'OK'
+            self.set_username(&auth.username)?;
+
+            // Pass password and check for 'OK'
+            if let Some(password) = &auth.password {
+                self.set_password(password)?;
+            }
         }
+        Ok(())
     }
 }
 
@@ -36,25 +55,18 @@ impl TcpConnection {
             config,
             stream: ConnectionStream::Plain(tcp_stream),
         };
-
-        // Initialize SSL connection
         connection = connection.enable_ssl()?;
-
-        // Attempt login using `config.auth`
-        connection.login()?;
-
         Ok(connection)
     }
 
     #[cfg(feature = "ssl")]
     fn enable_ssl(mut self) -> crate::Result<Self> {
         if self.config.ssl {
-            // Send TLS request and check for 'OK'
             self.write_cmd(Command::StartTLS)?;
             self.read_response()
                 .map_err(|e| {
-                    if let ClientError::Nut(NutError::FeatureNotConfigured) = e {
-                        ClientError::Nut(NutError::SslNotSupported)
+                    if let crate::ClientError::Nut(NutError::FeatureNotConfigured) = e {
+                        crate::ClientError::Nut(NutError::SslNotSupported)
                     } else {
                         e
                     }
@@ -92,10 +104,6 @@ impl TcpConnection {
 
             // Wrap and override the TCP stream
             self.stream = self.stream.upgrade_ssl(sess)?;
-
-            // Send a test command
-            self.write_cmd(Command::NetworkVersion)?;
-            self.read_plain_response()?;
         }
         Ok(self)
     }
@@ -103,21 +111,6 @@ impl TcpConnection {
     #[cfg(not(feature = "ssl"))]
     fn enable_ssl(self) -> crate::Result<Self> {
         Ok(self)
-    }
-
-    fn login(&mut self) -> crate::Result<()> {
-        if let Some(auth) = self.config.auth.clone() {
-            // Pass username and check for 'OK'
-            self.write_cmd(Command::SetUsername(&auth.username))?;
-            self.read_response()?.expect_ok()?;
-
-            // Pass password and check for 'OK'
-            if let Some(password) = &auth.password {
-                self.write_cmd(Command::SetPassword(password))?;
-                self.read_response()?.expect_ok()?;
-            }
-        }
-        Ok(())
     }
 
     pub(crate) fn write_cmd(&mut self, line: Command) -> crate::Result<()> {

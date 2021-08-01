@@ -243,12 +243,12 @@ impl Response {
 ///
 /// Each function should return a 2-tuple with
 ///     (1) the query to pass to `LIST`
-///     (2) a closure for mapping each `Response` row to the return type  
+///     (2) a closure for mapping each `Response` row to the return type
 macro_rules! implement_list_commands {
     (
         $(
             $(#[$attr:meta])+
-            fn $name:ident($($argname:ident: $argty:ty),*) -> $retty:ty {
+            $vis:vis fn $name:ident($($argname:ident: $argty:ty),*) -> $retty:ty {
                 (
                     $query:block,
                     $mapper:block,
@@ -259,7 +259,8 @@ macro_rules! implement_list_commands {
         impl crate::blocking::Connection {
             $(
                 $(#[$attr])*
-                pub fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
+                #[allow(dead_code)]
+                $vis fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
                     match self {
                         Self::Tcp(conn) => {
                             conn.write_cmd(Command::List($query))?;
@@ -275,7 +276,8 @@ macro_rules! implement_list_commands {
         impl crate::tokio::Connection {
             $(
                 $(#[$attr])*
-                pub async fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
+                #[allow(dead_code)]
+                $vis async fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
                     match self {
                         Self::Tcp(conn) => {
                             conn.write_cmd(Command::List($query)).await?;
@@ -298,7 +300,7 @@ macro_rules! implement_get_commands {
     (
         $(
             $(#[$attr:meta])+
-            fn $name:ident($($argname:ident: $argty:ty),*) -> $retty:ty {
+            $vis:vis fn $name:ident($($argname:ident: $argty:ty),*) -> $retty:ty {
                 (
                     $query:block,
                     $mapper:block,
@@ -309,7 +311,8 @@ macro_rules! implement_get_commands {
         impl crate::blocking::Connection {
             $(
                 $(#[$attr])*
-                pub fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
+                #[allow(dead_code)]
+                $vis fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
                     match self {
                         Self::Tcp(conn) => {
                             conn.write_cmd(Command::Get($query))?;
@@ -324,7 +327,8 @@ macro_rules! implement_get_commands {
         impl crate::tokio::Connection {
             $(
                 $(#[$attr])*
-                pub async fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
+                #[allow(dead_code)]
+                $vis async fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
                     match self {
                         Self::Tcp(conn) => {
                             conn.write_cmd(Command::Get($query)).await?;
@@ -346,7 +350,7 @@ macro_rules! implement_simple_commands {
     (
         $(
             $(#[$attr:meta])+
-            fn $name:ident($($argname:ident: $argty:ty),*) -> $retty:ty {
+            $vis:vis fn $name:ident($($argname:ident: $argty:ty),*) -> $retty:ty {
                 (
                     $cmd:block,
                     $mapper:block,
@@ -357,7 +361,8 @@ macro_rules! implement_simple_commands {
         impl crate::blocking::Connection {
             $(
                 $(#[$attr])*
-                pub fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
+                #[allow(dead_code)]
+                $vis fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
                     match self {
                         Self::Tcp(conn) => {
                             conn.write_cmd($cmd)?;
@@ -372,7 +377,8 @@ macro_rules! implement_simple_commands {
         impl crate::tokio::Connection {
             $(
                 $(#[$attr])*
-                pub async fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
+                #[allow(dead_code)]
+                $vis async fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
                     match self {
                         Self::Tcp(conn) => {
                             conn.write_cmd($cmd).await?;
@@ -385,9 +391,54 @@ macro_rules! implement_simple_commands {
     };
 }
 
+/// A macro for implementing action commands that return `OK`.
+///
+/// Each function should return the command to pass.
+macro_rules! implement_action_commands {
+    (
+        $(
+            $(#[$attr:meta])+
+            $vis:vis fn $name:ident($($argname:ident: $argty:ty),*) $cmd:block
+        )*
+    ) => {
+        impl crate::blocking::Connection {
+            $(
+                $(#[$attr])*
+                #[allow(dead_code)]
+                $vis fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<()> {
+                    match self {
+                        Self::Tcp(conn) => {
+                            conn.write_cmd($cmd)?;
+                            conn.read_response()?.expect_ok()?;
+                            Ok(())
+                        },
+                    }
+                }
+            )*
+        }
+
+        #[cfg(feature = "async")]
+        impl crate::tokio::Connection {
+            $(
+                $(#[$attr])*
+                #[allow(dead_code)]
+                $vis async fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<()> {
+                    match self {
+                        Self::Tcp(conn) => {
+                            conn.write_cmd($cmd).await?;
+                            conn.read_response().await?.expect_ok()?;
+                            Ok(())
+                        },
+                    }
+                }
+            )*
+        }
+    };
+}
+
 implement_list_commands! {
     /// Queries a list of UPS devices.
-    fn list_ups() -> Vec<(String, String)> {
+    pub fn list_ups() -> Vec<(String, String)> {
         (
             { &["UPS"] },
             { |row: Response| row.expect_ups() },
@@ -395,7 +446,7 @@ implement_list_commands! {
     }
 
     /// Queries a list of client IP addresses connected to the given device.
-    fn list_clients(ups_name: &str) -> Vec<String> {
+    pub fn list_clients(ups_name: &str) -> Vec<String> {
         (
             { &["CLIENT", ups_name] },
             { |row: Response| row.expect_client() },
@@ -403,7 +454,7 @@ implement_list_commands! {
     }
 
     /// Queries the list of variables for a UPS device.
-    fn list_vars(ups_name: &str) -> Vec<Variable> {
+    pub fn list_vars(ups_name: &str) -> Vec<Variable> {
         (
             { &["VAR", ups_name] },
             { |row: Response| row.expect_var() },
@@ -413,7 +464,7 @@ implement_list_commands! {
 
 implement_get_commands! {
     /// Queries one variable for a UPS device.
-    fn get_var(ups_name: &str, variable: &str) -> Variable {
+    pub fn get_var(ups_name: &str, variable: &str) -> Variable {
         (
             { &["VAR", ups_name, variable] },
             { |row: Response| row.expect_var() },
@@ -423,10 +474,22 @@ implement_get_commands! {
 
 implement_simple_commands! {
     /// Queries the network protocol version.
-    fn get_network_version() -> String {
+    pub fn get_network_version() -> String {
         (
             { Command::NetworkVersion },
             { |row: String| Ok(row) },
         )
+    }
+}
+
+implement_action_commands! {
+    /// Sends the login username.
+    pub(crate) fn set_username(username: &str) {
+        Command::SetUsername(username)
+    }
+
+    /// Sends the login password.
+    pub(crate) fn set_password(password: &str) {
+        Command::SetPassword(password)
     }
 }
