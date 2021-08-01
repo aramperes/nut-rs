@@ -3,7 +3,7 @@
 [![crates.io](https://img.shields.io/crates/v/rups.svg)](https://crates.io/crates/rups)
 [![Documentation](https://docs.rs/rups/badge.svg)](https://docs.rs/rups)
 [![MIT licensed](https://img.shields.io/crates/l/rups.svg)](./LICENSE)
-[![CI](https://github.com/aramperes/nut-client-rs/workflows/CI/badge.svg)](https://github.com/aramperes/nut-client-rs/actions?query=workflow%3ACI)
+[![CI](https://github.com/aramperes/nut-rs/workflows/CI/badge.svg)](https://github.com/aramperes/nut-rs/actions?query=workflow%3ACI)
 
 A [Network UPS Tools](https://github.com/networkupstools/nut) (NUT) client library for Rust.
 
@@ -31,7 +31,7 @@ upsc myupsname@localhost ups.status
 
 ## Example
 
-The [rupsc](https://github.com/aramperes/nut-client-rs/tree/master/rupsc)
+The [rupsc](https://github.com/aramperes/nut-rs/tree/master/rupsc)
 CLI is written using this library, and is a clone of NUT's
 built-in [upsc](https://networkupstools.org/docs/man/upsc.html) tool.
 

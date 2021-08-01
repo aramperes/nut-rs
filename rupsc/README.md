@@ -3,12 +3,12 @@
 [![crates.io](https://img.shields.io/crates/v/rupsc.svg)](https://crates.io/crates/rupsc)
 [![Documentation](https://docs.rs/rups/badge.svg)](https://docs.rs/rups)
 [![GPL-3.0 or later](https://img.shields.io/crates/l/rupsc.svg)](./LICENSE)
-[![CI](https://github.com/aramperes/nut-client-rs/workflows/CI/badge.svg)](https://github.com/aramperes/nut-client-rs/actions?query=workflow%3ACI)
+[![CI](https://github.com/aramperes/nut-rs/workflows/CI/badge.svg)](https://github.com/aramperes/nut-rs/actions?query=workflow%3ACI)
 
 A Rust clone of [upsc](https://networkupstools.org/docs/man/upsc.html),
 the [Network UPS Tools](https://github.com/networkupstools/nut) (NUT) demo program to display UPS variables.
 
-Written using the [rups](https://github.com/aramperes/nut-client-rs) crate.
+Written using the [rups](https://github.com/aramperes/nut-rs) crate.
 
 - Connect to `upsd`/`nut-server` using TCP
 - List UPS devices

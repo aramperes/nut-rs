@@ -6,7 +6,7 @@ edition = "2018"
 description = "A demo program to display UPS variables"
 categories = ["network-programming"]
 keywords = ["ups", "nut"]
-repository = "https://github.com/aramperes/nut-client-rs"
+repository = "https://github.com/aramperes/nut-rs"
 readme = "README.md"
 license = "GPL-3.0-or-later"
 
