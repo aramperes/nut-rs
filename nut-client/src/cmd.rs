@@ -84,6 +84,10 @@ pub enum Response {
     ///
     /// Params: (command description)
     CmdDesc(String),
+    /// A mutable variable (RW) response.
+    ///
+    /// Params: (var name, var value)
+    Rw(String, String),
 }
 
 impl Response {
@@ -169,6 +173,30 @@ impl Response {
                     Ok(args.remove(0))
                 }?;
                 Ok(Response::Var(var_name, var_value))
+            }
+            "RW" => {
+                let _var_device = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified RW device name in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                let var_name = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified RW name in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                let var_value = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified RW value in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                Ok(Response::Rw(var_name, var_value))
             }
             "UPS" => {
                 let name = if args.is_empty() {
@@ -271,6 +299,14 @@ impl Response {
 
     pub fn expect_var(&self) -> crate::Result<Variable> {
         if let Self::Var(name, value) = &self {
+            Ok(Variable::parse(name, value.to_owned()))
+        } else {
+            Err(NutError::UnexpectedResponse.into())
+        }
+    }
+
+    pub fn expect_rw(&self) -> crate::Result<Variable> {
+        if let Self::Rw(name, value) = &self {
             Ok(Variable::parse(name, value.to_owned()))
         } else {
             Err(NutError::UnexpectedResponse.into())
@@ -529,6 +565,14 @@ implement_list_commands! {
         (
             { &["VAR", ups_name] },
             { |row: Response| row.expect_var() },
+        )
+    }
+
+    /// Queries the list of mutable variables for a UPS device.
+    pub fn list_mutable_variables(ups_name: &str) -> Vec<Variable> {
+        (
+            { &["RW", ups_name] },
+            { |row: Response| row.expect_rw() },
         )
     }
 

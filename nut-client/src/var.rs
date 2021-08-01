@@ -30,7 +30,7 @@ pub mod key {
 /// Well-known variables for NUT UPS devices.
 ///
 /// List retrieved from: https://networkupstools.org/docs/user-manual.chunked/apcs01.html
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Variable {
     /// Device model.
     DeviceModel(String),
@@ -123,7 +123,7 @@ impl fmt::Display for Variable {
 }
 
 /// NUT device type.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum DeviceType {
     /// UPS (Uninterruptible Power Supply)
     Ups,

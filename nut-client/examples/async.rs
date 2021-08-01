@@ -36,9 +36,21 @@ async fn main() -> nut_client::Result<()> {
         println!("\t- Name: {}", name);
         println!("\t  Description: {}", description);
 
+        // Get list of mutable variables
+        let mutable_vars = conn.list_mutable_variables(&name).await?;
+
         // List UPS variables (key = val)
-        println!("\t  Variables:");
+        println!("\t  Mutable Variables:");
+        for var in mutable_vars.iter() {
+            println!("\t\t- {}", var);
+        }
+
+        // List UPS immutable properties (key = val)
+        println!("\t  Immutable Properties:");
         for var in conn.list_vars(&name).await? {
+            if mutable_vars.iter().any(|v| v.name() == var.name()) {
+                continue;
+            }
             println!("\t\t- {}", var);
         }
 
