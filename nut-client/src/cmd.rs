@@ -76,6 +76,10 @@ pub enum Response {
     ///
     /// Params: (client IP)
     Client(String),
+    /// A command (CMD) response.
+    ///
+    /// Params: (command name)
+    Cmd(String),
 }
 
 impl Response {
@@ -196,6 +200,23 @@ impl Response {
                 }?;
                 Ok(Response::Client(ip_address))
             }
+            "CMD" => {
+                let _device = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified CMD device in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                let name = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified CMD name in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                Ok(Response::Cmd(name))
+            }
             _ => Err(NutError::UnknownResponseType(cmd_name).into()),
         }
     }
@@ -239,6 +260,14 @@ impl Response {
     pub fn expect_client(&self) -> crate::Result<String> {
         if let Self::Client(client_ip) = &self {
             Ok(client_ip.to_owned())
+        } else {
+            Err(NutError::UnexpectedResponse.into())
+        }
+    }
+
+    pub fn expect_cmd(&self) -> crate::Result<String> {
+        if let Self::Cmd(name) = &self {
+            Ok(name.to_owned())
         } else {
             Err(NutError::UnexpectedResponse.into())
         }
@@ -451,7 +480,7 @@ implement_list_commands! {
         )
     }
 
-    /// Queries a list of client IP addresses connected to the given device.
+    /// Queries the list of client IP addresses connected to the given device.
     pub fn list_clients(ups_name: &str) -> Vec<String> {
         (
             { &["CLIENT", ups_name] },
@@ -464,6 +493,14 @@ implement_list_commands! {
         (
             { &["VAR", ups_name] },
             { |row: Response| row.expect_var() },
+        )
+    }
+
+    /// Queries the list of commands available for the given device.
+    pub fn list_commands(ups_name: &str) -> Vec<String> {
+        (
+            { &["CMD", ups_name] },
+            { |row: Response| row.expect_cmd() },
         )
     }
 }

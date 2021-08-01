@@ -40,6 +40,12 @@ fn main() -> nut_client::Result<()> {
         for var in conn.list_vars(&name)? {
             println!("\t\t- {}", var);
         }
+
+        // List UPS commands
+        println!("\t  Commands:");
+        for cmd in conn.list_commands(&name)? {
+            println!("\t\t- {}", cmd);
+        }
     }
 
     // Gracefully shut down the connection using the `LOGOUT` command
