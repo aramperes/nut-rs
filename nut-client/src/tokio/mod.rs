@@ -24,32 +24,6 @@ impl Connection {
         }
     }
 
-    /// Queries a list of UPS devices.
-    pub async fn list_ups(&mut self) -> crate::Result<Vec<(String, String)>> {
-        match self {
-            Self::Tcp(conn) => conn.list_ups().await,
-        }
-    }
-
-    /// Queries a list of client IP addresses connected to the given device.
-    pub async fn list_clients(&mut self, ups_name: &str) -> crate::Result<Vec<String>> {
-        match self {
-            Self::Tcp(conn) => conn.list_clients(ups_name).await,
-        }
-    }
-
-    /// Queries the list of variables for a UPS device.
-    pub async fn list_vars(&mut self, ups_name: &str) -> crate::Result<Vec<Variable>> {
-        match self {
-            Self::Tcp(conn) => Ok(conn
-                .list_vars(ups_name)
-                .await?
-                .into_iter()
-                .map(|(key, val)| Variable::parse(key.as_str(), val))
-                .collect()),
-        }
-    }
-
     /// Queries one variable for a UPS device.
     pub async fn get_var(&mut self, ups_name: &str, variable: &str) -> crate::Result<Variable> {
         match self {
@@ -162,30 +136,6 @@ impl TcpConnection {
         Ok(())
     }
 
-    async fn list_ups(&mut self) -> crate::Result<Vec<(String, String)>> {
-        let query = &["UPS"];
-        self.write_cmd(Command::List(query)).await?;
-
-        let list = self.read_list(query).await?;
-        list.into_iter().map(|row| row.expect_ups()).collect()
-    }
-
-    async fn list_clients(&mut self, ups_name: &str) -> crate::Result<Vec<String>> {
-        let query = &["CLIENT", ups_name];
-        self.write_cmd(Command::List(query)).await?;
-
-        let list = self.read_list(query).await?;
-        list.into_iter().map(|row| row.expect_client()).collect()
-    }
-
-    async fn list_vars(&mut self, ups_name: &str) -> crate::Result<Vec<(String, String)>> {
-        let query = &["VAR", ups_name];
-        self.write_cmd(Command::List(query)).await?;
-
-        let list = self.read_list(query).await?;
-        list.into_iter().map(|row| row.expect_var()).collect()
-    }
-
     async fn get_var<'a>(
         &mut self,
         ups_name: &'a str,
@@ -203,7 +153,7 @@ impl TcpConnection {
         self.read_plain_response().await
     }
 
-    async fn write_cmd(&mut self, line: Command<'_>) -> crate::Result<()> {
+    pub(crate) async fn write_cmd(&mut self, line: Command<'_>) -> crate::Result<()> {
         let line = format!("{}\n", line);
         if self.config.debug {
             eprint!("DEBUG -> {}", line);
@@ -243,7 +193,7 @@ impl TcpConnection {
         Ok(args.join(" "))
     }
 
-    async fn read_list(&mut self, query: &[&str]) -> crate::Result<Vec<Response>> {
+    pub(crate) async fn read_list(&mut self, query: &[&str]) -> crate::Result<Vec<Response>> {
         let mut reader = BufReader::new(&mut self.stream);
         let args = Self::parse_line(&mut reader, self.config.debug).await?;
 

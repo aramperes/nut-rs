@@ -21,31 +21,6 @@ impl Connection {
         }
     }
 
-    /// Queries a list of UPS devices.
-    pub fn list_ups(&mut self) -> crate::Result<Vec<(String, String)>> {
-        match self {
-            Self::Tcp(conn) => conn.list_ups(),
-        }
-    }
-
-    /// Queries a list of client IP addresses connected to the given device.
-    pub fn list_clients(&mut self, ups_name: &str) -> crate::Result<Vec<String>> {
-        match self {
-            Self::Tcp(conn) => conn.list_clients(ups_name),
-        }
-    }
-
-    /// Queries the list of variables for a UPS device.
-    pub fn list_vars(&mut self, ups_name: &str) -> crate::Result<Vec<Variable>> {
-        match self {
-            Self::Tcp(conn) => Ok(conn
-                .list_vars(ups_name)?
-                .into_iter()
-                .map(|(key, val)| Variable::parse(key.as_str(), val))
-                .collect()),
-        }
-    }
-
     /// Queries one variable for a UPS device.
     pub fn get_var(&mut self, ups_name: &str, variable: &str) -> crate::Result<Variable> {
         match self {
@@ -154,30 +129,6 @@ impl TcpConnection {
         Ok(())
     }
 
-    fn list_ups(&mut self) -> crate::Result<Vec<(String, String)>> {
-        let query = &["UPS"];
-        self.write_cmd(Command::List(query))?;
-
-        let list = self.read_list(query)?;
-        list.into_iter().map(|row| row.expect_ups()).collect()
-    }
-
-    fn list_clients(&mut self, ups_name: &str) -> crate::Result<Vec<String>> {
-        let query = &["CLIENT", ups_name];
-        self.write_cmd(Command::List(query))?;
-
-        let list = self.read_list(query)?;
-        list.into_iter().map(|row| row.expect_client()).collect()
-    }
-
-    fn list_vars(&mut self, ups_name: &str) -> crate::Result<Vec<(String, String)>> {
-        let query = &["VAR", ups_name];
-        self.write_cmd(Command::List(query))?;
-
-        let list = self.read_list(query)?;
-        list.into_iter().map(|row| row.expect_var()).collect()
-    }
-
     fn get_var(&mut self, ups_name: &str, variable: &str) -> crate::Result<(String, String)> {
         let query = &["VAR", ups_name, variable];
         self.write_cmd(Command::Get(query))?;
@@ -191,7 +142,7 @@ impl TcpConnection {
         self.read_plain_response()
     }
 
-    fn write_cmd(&mut self, line: Command) -> crate::Result<()> {
+    pub(crate) fn write_cmd(&mut self, line: Command) -> crate::Result<()> {
         let line = format!("{}\n", line);
         if self.config.debug {
             eprint!("DEBUG -> {}", line);
@@ -231,7 +182,7 @@ impl TcpConnection {
         Ok(args.join(" "))
     }
 
-    fn read_list(&mut self, query: &[&str]) -> crate::Result<Vec<Response>> {
+    pub(crate) fn read_list(&mut self, query: &[&str]) -> crate::Result<Vec<Response>> {
         let mut reader = BufReader::new(&mut self.stream);
         let args = Self::parse_line(&mut reader, self.config.debug)?;
 

@@ -1,6 +1,6 @@
 use core::fmt;
 
-use crate::{ClientError, NutError};
+use crate::{ClientError, NutError, Variable};
 
 #[derive(Debug, Clone)]
 pub enum Command<'a> {
@@ -236,5 +236,81 @@ impl Response {
         } else {
             Err(NutError::UnexpectedResponse.into())
         }
+    }
+}
+
+/// A macro for implementing `LIST` commands.
+///
+/// Each function should return a 2-tuple with
+///     (1) the query to pass to `LIST`
+///     (2) a closure for mapping each `Response` row to the return type  
+macro_rules! implement_list_commands {
+    (
+        $(
+            $(#[$attr:meta])+
+            fn $name:ident($($argname:ident: $argty:ty),*) -> $retty:ty {
+                (
+                    $query:block,
+                    $mapper:block,
+                )
+            }
+        )*
+    ) => {
+        impl crate::blocking::Connection {
+            $(
+                $(#[$attr])*
+                pub fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
+                    match self {
+                        Self::Tcp(conn) => {
+                            conn.write_cmd(Command::List($query))?;
+                            let list = conn.read_list($query)?;
+                            list.into_iter().map($mapper).collect()
+                        },
+                    }
+                }
+            )*
+        }
+
+        #[cfg(feature = "async")]
+        impl crate::tokio::Connection {
+            $(
+                $(#[$attr])*
+                pub async fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$retty> {
+                    match self {
+                        Self::Tcp(conn) => {
+                            conn.write_cmd(Command::List($query)).await?;
+                            let list = conn.read_list($query).await?;
+                            list.into_iter().map($mapper).collect()
+                        },
+                    }
+                }
+            )*
+        }
+    };
+}
+
+implement_list_commands! {
+    /// Queries a list of UPS devices.
+    fn list_ups() -> Vec<(String, String)> {
+        (
+            { &["UPS"] },
+            { |row| row.expect_ups() },
+        )
+    }
+
+    /// Queries a list of client IP addresses connected to the given device.
+    fn list_clients(ups_name: &str) -> Vec<String> {
+        (
+            { &["CLIENT", ups_name] },
+            { |row| row.expect_client() },
+        )
+    }
+
+    /// Queries the list of variables for a UPS device.
+    fn list_vars(ups_name: &str) -> Vec<Variable> {
+        (
+            { &["VAR", ups_name] },
+            { |row| row.expect_var().map(|var| Variable::parse(var.0.as_str(), var.1)) },
+        )
     }
 }
