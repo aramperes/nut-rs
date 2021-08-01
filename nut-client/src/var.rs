@@ -277,6 +277,10 @@ impl<A: ToString> TryFrom<(A, Vec<&str>)> for VariableDefinition {
     }
 }
 
+/// A range of values for a variable.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct VariableRange(pub String, pub String);
+
 #[cfg(test)]
 mod tests {
     use std::iter::FromIterator;

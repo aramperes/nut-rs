@@ -1,7 +1,7 @@
 use core::fmt;
-
-use crate::{ClientError, NutError, Variable, VariableDefinition};
 use std::convert::TryFrom;
+
+use crate::{ClientError, NutError, Variable, VariableDefinition, VariableRange};
 
 #[derive(Debug, Clone)]
 pub enum Command<'a> {
@@ -105,6 +105,10 @@ pub enum Response {
     ///
     /// Params: (variable name, variable types)
     Type(String, Vec<String>),
+    /// A variable range (RANGE) response.
+    ///
+    /// Params: (variable range)
+    Range(VariableRange),
 }
 
 impl Response {
@@ -371,6 +375,37 @@ impl Response {
                 let types = args;
                 Ok(Response::Type(name, types))
             }
+            "RANGE" => {
+                let _device = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified RANGE device in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                let _name = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified RANGE name in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                let min = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified RANGE min in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                let max = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified RANGE max in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                Ok(Response::Range(VariableRange(min, max)))
+            }
             _ => Err(NutError::UnknownResponseType(cmd_name).into()),
         }
     }
@@ -473,6 +508,14 @@ impl Response {
                 name.to_owned(),
                 types.iter().map(String::as_str).collect(),
             ))
+        } else {
+            Err(NutError::UnexpectedResponse.into())
+        }
+    }
+
+    pub fn expect_range(&self) -> crate::Result<VariableRange> {
+        if let Self::Range(range) = &self {
+            Ok(range.to_owned())
         } else {
             Err(NutError::UnexpectedResponse.into())
         }
@@ -714,6 +757,14 @@ implement_list_commands! {
         (
             { &["CMD", ups_name] },
             { |row: Response| row.expect_cmd() },
+        )
+    }
+
+    /// Queries the possible ranges of a UPS variable.
+    pub fn list_var_range(ups_name: &str, variable: &str) -> Vec<VariableRange> {
+        (
+            { &["RANGE", ups_name, variable] },
+            { |row: Response| row.expect_range() },
         )
     }
 }
