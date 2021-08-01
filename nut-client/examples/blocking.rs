@@ -36,7 +36,7 @@ fn main() -> nut_client::Result<()> {
         println!("\t  Description: {}", description);
 
         // Get list of mutable variables
-        let mutable_vars = conn.list_mutable_variables(&name)?;
+        let mutable_vars = conn.list_mutable_vars(&name)?;
 
         // List UPS variables (key = val)
         println!("\t  Mutable Variables:");

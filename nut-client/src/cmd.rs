@@ -569,7 +569,7 @@ implement_list_commands! {
     }
 
     /// Queries the list of mutable variables for a UPS device.
-    pub fn list_mutable_variables(ups_name: &str) -> Vec<Variable> {
+    pub fn list_mutable_vars(ups_name: &str) -> Vec<Variable> {
         (
             { &["RW", ups_name] },
             { |row: Response| row.expect_rw() },
