@@ -109,6 +109,10 @@ pub enum Response {
     ///
     /// Params: (variable range)
     Range(VariableRange),
+    /// A variable enum (ENUM) response.
+    ///
+    /// Params: (enum value)
+    Enum(String),
 }
 
 impl Response {
@@ -406,6 +410,30 @@ impl Response {
                 }?;
                 Ok(Response::Range(VariableRange(min, max)))
             }
+            "ENUM" => {
+                let _device = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified ENUM device in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                let _name = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified ENUM name in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                let val = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified ENUM value in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                Ok(Response::Enum(val))
+            }
             _ => Err(NutError::UnknownResponseType(cmd_name).into()),
         }
     }
@@ -516,6 +544,14 @@ impl Response {
     pub fn expect_range(&self) -> crate::Result<VariableRange> {
         if let Self::Range(range) = &self {
             Ok(range.to_owned())
+        } else {
+            Err(NutError::UnexpectedResponse.into())
+        }
+    }
+
+    pub fn expect_enum(&self) -> crate::Result<String> {
+        if let Self::Enum(value) = &self {
+            Ok(value.to_owned())
         } else {
             Err(NutError::UnexpectedResponse.into())
         }
@@ -765,6 +801,14 @@ implement_list_commands! {
         (
             { &["RANGE", ups_name, variable] },
             { |row: Response| row.expect_range() },
+        )
+    }
+
+    /// Queries the possible enum values of a UPS variable.
+    pub fn list_var_enum(ups_name: &str, variable: &str) -> Vec<String> {
+        (
+            { &["ENUM", ups_name, variable] },
+            { |row: Response| row.expect_enum() },
         )
     }
 }
