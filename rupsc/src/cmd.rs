@@ -15,7 +15,7 @@ pub fn list_devices(config: Config, with_description: bool) -> anyhow::Result<()
         }
     }
 
-    Ok(())
+    logout(conn)
 }
 
 pub fn print_variable(config: Config, ups_name: &str, variable: &str) -> anyhow::Result<()> {
@@ -24,7 +24,7 @@ pub fn print_variable(config: Config, ups_name: &str, variable: &str) -> anyhow:
     let variable = conn.get_var(ups_name, variable)?;
     println!("{}", variable.value());
 
-    Ok(())
+    logout(conn)
 }
 
 pub fn list_variables(config: Config, ups_name: &str) -> anyhow::Result<()> {
@@ -34,7 +34,7 @@ pub fn list_variables(config: Config, ups_name: &str) -> anyhow::Result<()> {
         println!("{}", var);
     }
 
-    Ok(())
+    logout(conn)
 }
 
 pub fn list_clients(config: Config, ups_name: &str) -> anyhow::Result<()> {
@@ -44,9 +44,13 @@ pub fn list_clients(config: Config, ups_name: &str) -> anyhow::Result<()> {
         println!("{}", client_ip);
     }
 
-    Ok(())
+    logout(conn)
 }
 
 fn connect(config: Config) -> anyhow::Result<Connection> {
     Connection::new(&config).with_context(|| format!("Failed to connect to upsd: {:?}", &config))
+}
+
+fn logout(conn: Connection) -> anyhow::Result<()> {
+    conn.close().with_context(|| "Failed to close gracefully")
 }

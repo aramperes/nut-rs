@@ -26,6 +26,12 @@ impl Connection {
         Ok(conn)
     }
 
+    /// Gracefully closes the connection.
+    pub fn close(mut self) -> crate::Result<()> {
+        self.logout()?;
+        Ok(())
+    }
+
     /// Sends username and password, as applicable.
     fn login(&mut self, config: &Config) -> crate::Result<()> {
         if let Some(auth) = config.auth.clone() {

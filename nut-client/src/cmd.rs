@@ -15,8 +15,10 @@ pub enum Command<'a> {
     StartTLS,
     /// Queries the network version.
     NetworkVersion,
-    /// Queries the server version
+    /// Queries the server version.
     Version,
+    /// Gracefully shuts down the connection.
+    Logout,
 }
 
 impl<'a> Command<'a> {
@@ -30,6 +32,7 @@ impl<'a> Command<'a> {
             Self::StartTLS => "STARTTLS",
             Self::NetworkVersion => "NETVER",
             Self::Version => "VER",
+            Self::Logout => "LOGOUT",
         }
     }
 
@@ -502,5 +505,10 @@ implement_action_commands! {
     /// Sends the login password.
     pub(crate) fn set_password(password: &str) {
         Command::SetPassword(password)
+    }
+
+    /// Gracefully shuts down the connection.
+    pub(crate) fn logout() {
+        Command::Logout
     }
 }

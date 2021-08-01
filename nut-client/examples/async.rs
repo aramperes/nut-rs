@@ -43,5 +43,6 @@ async fn main() -> nut_client::Result<()> {
         }
     }
 
-    Ok(())
+    // Gracefully shut down the connection using the `LOGOUT` command
+    conn.close().await
 }

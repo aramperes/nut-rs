@@ -1,8 +1,8 @@
+use std::convert::TryInto;
 use std::env;
 
 use nut_client::blocking::Connection;
 use nut_client::{Auth, ConfigBuilder};
-use std::convert::TryInto;
 
 fn main() -> nut_client::Result<()> {
     let host = env::var("NUT_HOST").unwrap_or_else(|_| "localhost".into());
@@ -42,5 +42,6 @@ fn main() -> nut_client::Result<()> {
         }
     }
 
-    Ok(())
+    // Gracefully shut down the connection using the `LOGOUT` command
+    conn.close()
 }
