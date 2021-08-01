@@ -88,6 +88,10 @@ pub enum Response {
     ///
     /// Params: (var name, var value)
     Rw(String, String),
+    /// A variable description (DESC) response.
+    ///
+    /// Params: (variable description)
+    Desc(String),
 }
 
 impl Response {
@@ -273,6 +277,30 @@ impl Response {
                 }?;
                 Ok(Response::CmdDesc(desc))
             }
+            "DESC" => {
+                let _device = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified DESC device in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                let _name = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified DESC name in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                let desc = if args.is_empty() {
+                    Err(ClientError::from(NutError::Generic(
+                        "Unspecified DESC description in response".into(),
+                    )))
+                } else {
+                    Ok(args.remove(0))
+                }?;
+                Ok(Response::Desc(desc))
+            }
             _ => Err(NutError::UnknownResponseType(cmd_name).into()),
         }
     }
@@ -339,6 +367,14 @@ impl Response {
 
     pub fn expect_cmddesc(&self) -> crate::Result<String> {
         if let Self::CmdDesc(description) = &self {
+            Ok(description.to_owned())
+        } else {
+            Err(NutError::UnexpectedResponse.into())
+        }
+    }
+
+    pub fn expect_desc(&self) -> crate::Result<String> {
+        if let Self::Desc(description) = &self {
             Ok(description.to_owned())
         } else {
             Err(NutError::UnexpectedResponse.into())
@@ -591,6 +627,14 @@ implement_get_commands! {
         (
             { &["VAR", ups_name, variable] },
             { |row: Response| row.expect_var() },
+        )
+    }
+
+    /// Queries the description of a UPS variable.
+    pub fn get_var_description(ups_name: &str, variable: &str) -> String {
+        (
+            { &["DESC", ups_name, variable] },
+            { |row: Response| row.expect_desc() },
         )
     }
 
