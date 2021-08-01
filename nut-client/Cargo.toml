@@ -1,6 +1,6 @@
 [package]
 name = "nut-client"
-version = "0.3.1"
+version = "0.4.0"
 authors = ["Aram Peres <aram.peres@wavy.fm>"]
 edition = "2018"
 description = "Network UPS Tools (NUT) client library"
