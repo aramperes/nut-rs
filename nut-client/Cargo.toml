@@ -26,10 +26,12 @@ default = []
 ssl = ["rustls", "rustls/dangerous_configuration", "webpki", "webpki-roots"]
 async = ["tokio"]
 async-ssl = ["async", "tokio-rustls", "ssl"]
-
 # a feature gate for examples
 async-rt = ["async", "tokio/rt-multi-thread", "tokio/macros"]
 
 [[example]]
 name = "async"
 required-features = ["async-rt"]
+
+[package.metadata.docs.rs]
+all-features = true
