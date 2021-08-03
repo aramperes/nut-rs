@@ -191,6 +191,18 @@ macro_rules! impl_sentences {
     };
 }
 
+#[allow(unused_macros)]
+macro_rules! test_decode {
+    ([$($word:expr$(,)?)+] => $expected:expr) => {
+        assert_eq!(
+            Sentences::decode(vec![
+                $($word.into(),)*
+            ]),
+            $expected
+        );
+    };
+}
+
 /// Messages decoded by the server.
 pub mod server_bound {
     impl_sentences! {
@@ -362,8 +374,8 @@ pub mod server_bound {
             {
                 0: List,
                 1: Client,
-                3: Arg,
-                4: EOL,
+                2: Arg,
+                3: EOL,
             },
             {
                 /// The name of the UPS device.
@@ -511,15 +523,148 @@ pub mod server_bound {
         use super::*;
         #[test]
         fn test_decode() {
-            assert_eq!(
-                Sentences::decode(vec!["VERSION".into()]),
-                Some(Sentences::QueryVersion {})
+            test_decode!(
+                ["GET", "NUMLOGINS", "nutdev"] =>
+                Some(Sentences::QueryNumLogins {
+                    ups_name: "nutdev".into(),
+                })
             );
-            assert_eq!(
-                Sentences::decode(vec!["LIST".into(), "VAR".into(), "nutdev".into()]),
+            test_decode!(
+                ["GET", "UPSDESC", "nutdev"] =>
+                Some(Sentences::QueryUpsDesc {
+                    ups_name: "nutdev".into(),
+                })
+            );
+            test_decode!(
+                ["GET", "VAR", "nutdev", "test.var"] =>
+                Some(Sentences::QueryVar {
+                    ups_name: "nutdev".into(),
+                    var_name: "test.var".into(),
+                })
+            );
+            test_decode!(
+                ["GET", "TYPE", "nutdev", "test.var"] =>
+                Some(Sentences::QueryType {
+                    ups_name: "nutdev".into(),
+                    var_name: "test.var".into(),
+                })
+            );
+            test_decode!(
+                ["GET", "DESC", "nutdev", "test.var"] =>
+                Some(Sentences::QueryDesc {
+                    ups_name: "nutdev".into(),
+                    var_name: "test.var".into(),
+                })
+            );
+            test_decode!(
+                ["GET", "CMDDESC", "nutdev", "test.cmd"] =>
+                Some(Sentences::QueryCmdDesc {
+                    ups_name: "nutdev".into(),
+                    cmd_name: "test.cmd".into(),
+                })
+            );
+            test_decode!(
+                ["LIST", "VAR", "nutdev"] =>
                 Some(Sentences::QueryListVar {
                     ups_name: "nutdev".into(),
                 })
+            );
+            test_decode!(
+                ["LIST", "RW", "nutdev"] =>
+                Some(Sentences::QueryListRw {
+                    ups_name: "nutdev".into(),
+                })
+            );
+            test_decode!(
+                ["LIST", "CMD", "nutdev"] =>
+                Some(Sentences::QueryListCmd {
+                    ups_name: "nutdev".into(),
+                })
+            );
+            test_decode!(
+                ["LIST", "ENUM", "nutdev", "test.var"] =>
+                Some(Sentences::QueryListEnum {
+                    ups_name: "nutdev".into(),
+                    var_name: "test.var".into(),
+                })
+            );
+            test_decode!(
+                ["LIST", "RANGE", "nutdev", "test.var"] =>
+                Some(Sentences::QueryListRange {
+                    ups_name: "nutdev".into(),
+                    var_name: "test.var".into(),
+                })
+            );
+            test_decode!(
+                ["LIST", "CLIENT", "nutdev"] =>
+                Some(Sentences::QueryListClient {
+                    ups_name: "nutdev".into(),
+                })
+            );
+            test_decode!(
+                ["SET", "VAR", "nutdev", "test.var", "something"] =>
+                Some(Sentences::ExecSetVar {
+                    ups_name: "nutdev".into(),
+                    var_name: "test.var".into(),
+                    value: "something".into(),
+                })
+            );
+            test_decode!(
+                ["INSTCMD", "nutdev", "test.cmd"] =>
+                Some(Sentences::ExecInstCmd {
+                    ups_name: "nutdev".into(),
+                    cmd_name: "test.cmd".into(),
+                })
+            );
+            test_decode!(
+                ["LOGOUT"] =>
+                Some(Sentences::ExecLogout {})
+            );
+            test_decode!(
+                ["LOGIN", "nutdev"] =>
+                Some(Sentences::ExecLogin {
+                    ups_name: "nutdev".into(),
+                })
+            );
+            test_decode!(
+                ["MASTER", "nutdev"] =>
+                Some(Sentences::ExecMaster {
+                    ups_name: "nutdev".into(),
+                })
+            );
+            test_decode!(
+                ["FSD", "nutdev"] =>
+                Some(Sentences::ExecForcedShutDown {
+                    ups_name: "nutdev".into(),
+                })
+            );
+            test_decode!(
+                ["PASSWORD", "topsecret"] =>
+                Some(Sentences::SetPassword {
+                    password: "topsecret".into(),
+                })
+            );
+            test_decode!(
+                ["USERNAME", "john"] =>
+                Some(Sentences::SetUsername {
+                    username: "john".into(),
+                })
+            );
+            test_decode!(
+                ["STARTTLS"] =>
+                Some(Sentences::ExecStartTLS {})
+            );
+            test_decode!(
+                ["HELP"] =>
+                Some(Sentences::QueryHelp {})
+            );
+            test_decode!(
+                ["VERSION"] =>
+                Some(Sentences::QueryVersion {})
+            );
+            test_decode!(
+                ["NETVER"] =>
+                Some(Sentences::QueryNetworkVersion {})
             );
         }
     }
