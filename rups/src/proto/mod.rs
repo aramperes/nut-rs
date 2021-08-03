@@ -1,5 +1,5 @@
 ///! NUT protocol implementation (v1.2).
-///! Documentation: https://networkupstools.org/docs/developer-guide.chunked/ar01s09.html
+///! Reference: https://networkupstools.org/docs/developer-guide.chunked/ar01s09.html
 
 macro_rules! impl_words {
     (
@@ -8,7 +8,10 @@ macro_rules! impl_words {
             $name:ident($word:tt),
         )*
     ) => {
+        #[derive(Debug, Copy, Clone, Eq, PartialEq)]
         pub(crate) enum Word {
+            /// A string argument.
+            Arg,
             /// End-of-line.
             EOL,
             $(
@@ -37,10 +40,10 @@ macro_rules! impl_words {
             /// Decodes a sequence of words.
             /// Unrecognized words will be `None`
             /// Returns a `Vec` of the same length as the given slice.
-            pub(crate) fn decode_words(raw: &[&str]) -> Vec<Option<Self>> {
+            pub(crate) fn decode_words<T: AsRef<str>>(raw: &[T]) -> Vec<Option<Self>> {
                 let mut words = Vec::new();
                 for r in raw.iter() {
-                    words.push(Self::decode(Some(r)));
+                    words.push(Self::decode(Some(r.as_ref())));
                 }
                 words.push(Some(Self::EOL));
                 words
@@ -50,8 +53,22 @@ macro_rules! impl_words {
             /// This function cannot encode `Arg` or `EOL` (either returns `None`).
             pub(crate) fn encode(&self) -> Option<&str> {
                 match self {
-                    Self::EOL => None,
+                    Self::Arg | Self::EOL => None,
                     $(Self::$name => Some($word),)*
+                }
+            }
+
+            pub(crate) fn matches(&self, other: Option<&Option<Self>>) -> bool {
+                if let Some(other) = other {
+                    if self == &Word::Arg {
+                        true
+                    } else if let Some(other) = other {
+                        self == other
+                    } else {
+                        self == &Word::EOL
+                    }
+                } else {
+                    false
                 }
             }
         }
@@ -121,20 +138,86 @@ impl_words! {
     Version("VERSION"),
 }
 
-// impl_serverbound! {
-//     QueryVersion(Version, EOL),
-//     QueryNetworkVersion(NetworkVersion, EOL),
-//     QueryHelp(Help, EOL),
-//     QueryListUps(List, Ups, EOL),
-//     QueryListVar(List, Var, Arg(ups_name), EOL),
-//     QueryListRw(List, Rw, Arg(ups_name), EOL),
-// }
+/// Messages decoded by the server.
+pub mod server_bound {
+    impl_sentences! {
+        QueryVersion (
+            {
+                0: Version,
+                1: EOL,
+            },
+            {}
+        ),
+        QueryListVar (
+            {
+                0: List,
+                1: Var,
+                2: Arg,
+                3: EOL,
+            },
+            {
+                2: (ups_name: String),
+            }
+        )
+    }
 
-pub(crate) enum ServerboundSentence {
-    QueryVersion,
-    QueryNetworkVersion,
-    QueryHelp,
-    QueryListUps,
-    QueryListVar { ups_name: String },
-    QueryListRw { ups_name: String },
+    // TODO: Macro
+    #[derive(Debug, Clone, Eq, PartialEq)]
+    pub enum Sentences {
+        QueryVersion {},
+        QueryNetworkVersion {},
+        QueryHelp {},
+        QueryListUps {},
+        QueryListVar { ups_name: String },
+        QueryListRw { ups_name: String },
+    }
+
+    // TODO: Macro
+    impl Sentences {
+        pub(crate) fn decode(raw: Vec<String>) -> Option<Sentences> {
+            use super::{Word::*, *};
+            use Sentences::*;
+            let words = Word::decode_words(raw.as_slice());
+
+            if Version.matches(words.get(0)) && EOL.matches(words.get(1)) {
+                return Some(QueryVersion {});
+            }
+            if List.matches(words.get(0))
+                && Var.matches(words.get(1))
+                && Arg.matches(words.get(2))
+                && EOL.matches(words.get(3))
+            {
+                return Some(QueryListVar {
+                    ups_name: raw[2].to_owned(),
+                });
+            }
+
+            None
+        }
+    }
+}
+
+// TODO Macro
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_serverbound_decode() {
+        assert_eq!(
+            server_bound::Sentences::decode(vec!["VERSION".into()]),
+            Some(server_bound::Sentences::QueryVersion {})
+        );
+        assert_eq!(
+            server_bound::Sentences::decode(vec!["LIST".into(), "VAR".into(), "nutdev".into()]),
+            Some(server_bound::Sentences::QueryListVar {
+                ups_name: "nutdev".into()
+            })
+        );
+        assert_eq!(
+            server_bound::Sentences::decode(vec!["LIST".into(), "RW".into(), "nutdev".into()]),
+            Some(server_bound::Sentences::QueryListRw {
+                ups_name: "nutdev".into()
+            })
+        );
+    }
 }
