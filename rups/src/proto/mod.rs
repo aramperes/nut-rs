@@ -156,7 +156,7 @@ pub mod server_bound {
                 3: EOL,
             },
             {
-                2: (ups_name: String),
+                2: ups_name: String,
             }
         )
     }
