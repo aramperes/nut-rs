@@ -8,6 +8,7 @@ macro_rules! impl_words {
             $name:ident($word:tt),
         )*
     ) => {
+        #[allow(clippy::upper_case_acronyms)]
         #[derive(Debug, Copy, Clone, Eq, PartialEq)]
         pub(crate) enum Word {
             /// A string argument.
@@ -138,16 +139,152 @@ impl_words! {
     Version("VERSION"),
 }
 
+macro_rules! impl_sentences {
+    (
+        $(
+            $(#[$attr:meta])+
+            $name:ident(
+                {
+                    $($wordidx:tt: $word:ident,)*
+                },
+                {
+                    $(
+                        $(#[$argattr:meta])+
+                        $argidx:tt: $arg:ident,
+                    )*
+                }
+            ),
+        )*
+    ) => {
+        /// Protocol sentences.
+        #[derive(Debug, Clone, Eq, PartialEq)]
+        pub enum Sentences {
+            $(
+                $(#[$attr])*
+                $name {
+                    $(
+                        $(#[$argattr])*
+                        $arg: String,
+                    )*
+                },
+            )*
+        }
+
+        impl Sentences {
+            /// Decodes a sentence. Returns `None` if the pattern cannot be recognized.
+            pub(crate) fn decode(raw: Vec<String>) -> Option<Sentences> {
+                use super::{Word::*, *};
+                use Sentences::*;
+                let words = Word::decode_words(raw.as_slice());
+
+                $(
+                    if true $(&& $word.matches(words.get($wordidx)))* {
+                        return Some($name {
+                            $($arg: raw[$argidx].to_owned(),)*
+                        })
+                    }
+                )*
+
+                None
+            }
+        }
+    };
+}
+
 /// Messages decoded by the server.
 pub mod server_bound {
     impl_sentences! {
-        QueryVersion (
+        /// Client requests the number of prior logins to the given `ups_name` device.
+        QueryNumLogins (
             {
-                0: Version,
-                1: EOL,
+                0: Get,
+                1: NumLogins,
+                2: Arg,
+                3: EOL,
             },
-            {}
+            {
+                /// The name of the UPS device.
+                2: ups_name,
+            }
         ),
+        /// Client requests the description of the given `ups_name` device.
+        QueryUpsDesc (
+            {
+                0: Get,
+                1: UpsDesc,
+                2: Arg,
+                3: EOL,
+            },
+            {
+                /// The name of the UPS device.
+                2: ups_name,
+            }
+        ),
+        /// Client requests the value of the given `var_name` variable in the given `ups_name` device.
+        QueryVar (
+            {
+                0: Get,
+                1: Var,
+                2: Arg,
+                3: Arg,
+                4: EOL,
+            },
+            {
+                /// The name of the UPS device.
+                2: ups_name,
+                /// The name of the variable.
+                3: var_name,
+            }
+        ),
+        /// Client requests the type of the given `var_name` variable in the given `ups_name` device.
+        QueryType (
+            {
+                0: Get,
+                1: Type,
+                2: Arg,
+                3: Arg,
+                4: EOL,
+            },
+            {
+                /// The name of the UPS device.
+                2: ups_name,
+                /// The name of the variable.
+                3: var_name,
+            }
+        ),
+        /// Client requests the description of the given `var_name` variable in the given `ups_name` device.
+        QueryDesc (
+            {
+                0: Get,
+                1: Desc,
+                2: Arg,
+                3: Arg,
+                4: EOL,
+            },
+            {
+                /// The name of the UPS device.
+                2: ups_name,
+                /// The name of the variable.
+                3: var_name,
+            }
+        ),
+        /// Client requests the description of the given `cmd_name` command in the given `ups_name` device.
+        QueryCmdDesc (
+            {
+                0: Get,
+                1: CmdDesc,
+                2: Arg,
+                3: Arg,
+                4: EOL,
+            },
+            {
+                /// The name of the UPS device.
+                2: ups_name,
+                /// The name of the command.
+                3: cmd_name,
+            }
+        ),
+        /// Client requests the list of variables for the given `ups_name` device.
         QueryListVar (
             {
                 0: List,
@@ -156,68 +293,234 @@ pub mod server_bound {
                 3: EOL,
             },
             {
-                2: ups_name: String,
+                /// The name of the UPS device.
+                2: ups_name,
             }
-        )
-    }
-
-    // TODO: Macro
-    #[derive(Debug, Clone, Eq, PartialEq)]
-    pub enum Sentences {
-        QueryVersion {},
-        QueryNetworkVersion {},
-        QueryHelp {},
-        QueryListUps {},
-        QueryListVar { ups_name: String },
-        QueryListRw { ups_name: String },
-    }
-
-    // TODO: Macro
-    impl Sentences {
-        pub(crate) fn decode(raw: Vec<String>) -> Option<Sentences> {
-            use super::{Word::*, *};
-            use Sentences::*;
-            let words = Word::decode_words(raw.as_slice());
-
-            if Version.matches(words.get(0)) && EOL.matches(words.get(1)) {
-                return Some(QueryVersion {});
-            }
-            if List.matches(words.get(0))
-                && Var.matches(words.get(1))
-                && Arg.matches(words.get(2))
-                && EOL.matches(words.get(3))
+        ),
+        /// Client requests the list of mutable variables for the given `ups_name` device.
+        QueryListRw (
             {
-                return Some(QueryListVar {
-                    ups_name: raw[2].to_owned(),
-                });
+                0: List,
+                1: Rw,
+                2: Arg,
+                3: EOL,
+            },
+            {
+                /// The name of the UPS device.
+                2: ups_name,
             }
-
-            None
-        }
+        ),
+        /// Client requests the list of commands for the given `ups_name` device.
+        QueryListCmd (
+            {
+                0: List,
+                1: Cmd,
+                2: Arg,
+                3: EOL,
+            },
+            {
+                /// The name of the UPS device.
+                2: ups_name,
+            }
+        ),
+        /// Client requests the list of possible values of the enumerable variable `var_name`
+        /// for the given `ups_name` device.
+        QueryListEnum (
+            {
+                0: List,
+                1: Enum,
+                2: Arg,
+                3: Arg,
+                4: EOL,
+            },
+            {
+                /// The name of the UPS device.
+                2: ups_name,
+                /// The name of the variable.
+                3: var_name,
+            }
+        ),
+        /// Client requests the list of possible ranges of the numerical variable `var_name`
+        /// for the given `ups_name` device.
+        QueryListRange (
+            {
+                0: List,
+                1: Range,
+                2: Arg,
+                3: Arg,
+                4: EOL,
+            },
+            {
+                /// The name of the UPS device.
+                2: ups_name,
+                /// The name of the variable.
+                3: var_name,
+            }
+        ),
+        /// Client requests the list of clients connected to the given `ups_name` device.
+        QueryListClient (
+            {
+                0: List,
+                1: Client,
+                3: Arg,
+                4: EOL,
+            },
+            {
+                /// The name of the UPS device.
+                2: ups_name,
+            }
+        ),
+        /// Client requests to set the value `value` of the `var_name` variable on the `ups_name` device.
+        ExecSetVar (
+            {
+                0: Set,
+                1: Var,
+                2: Arg,
+                3: Arg,
+                4: Arg,
+                5: EOL,
+            },
+            {
+                /// The name of the UPS device.
+                2: ups_name,
+                /// The name of the variable.
+                3: var_name,
+                /// The new value of the variable.
+                4: value,
+            }
+        ),
+        /// Client requests the execution of an instant command `cmd_name` on the `ups_name` device.
+        ExecInstCmd (
+            {
+                0: InstCmd,
+                1: Arg,
+                2: Arg,
+                3: EOL,
+            },
+            {
+                /// The name of the UPS device.
+                1: ups_name,
+                /// The name of the command.
+                2: cmd_name,
+            }
+        ),
+        /// Client logs-out of the current UPS device.
+        ExecLogout (
+            {
+                0: Logout,
+                1: EOL,
+            },
+            {}
+        ),
+        /// Client logs-into the given `ups_name` device.
+        ExecLogin (
+            {
+                0: Login,
+                1: Arg,
+                2: EOL,
+            },
+            {
+                /// The name of the UPS device.
+                1: ups_name,
+            }
+        ),
+        /// Client asserts master-level access to the `ups_name` device.
+        ExecMaster (
+            {
+                0: Master,
+                1: Arg,
+                2: EOL,
+            },
+            {
+                /// The name of the UPS  device.
+                1: ups_name,
+            }
+        ),
+        /// Client requests the forced shut-down of the `ups_name` device.
+        ExecForcedShutDown (
+            {
+                0: Fsd,
+                1: Arg,
+                2: EOL,
+            },
+            {
+                /// The name of the UPS device.
+                1: ups_name,
+            }
+        ),
+        /// Client sets the password on the connection.
+        SetPassword (
+            {
+                0: Password,
+                1: Arg,
+                2: EOL,
+            },
+            {
+                /// The password to set.
+                1: password,
+            }
+        ),
+        /// Client sets the username on the connection.
+        SetUsername (
+            {
+                0: Username,
+                1: Arg,
+                2: EOL,
+            },
+            {
+                /// The username to set.
+                1: username,
+            }
+        ),
+        /// Client requests the connection be upgraded to TLS.
+        ExecStartTLS (
+            {
+                0: StartTLS,
+                1: EOL,
+            },
+            {}
+        ),
+        /// Client requests the list of commands supported by the server.
+        QueryHelp (
+            {
+                0: Help,
+                1: EOL,
+            },
+            {}
+        ),
+        /// Client requests the server version.
+        QueryVersion (
+            {
+                0: Version,
+                1: EOL,
+            },
+            {}
+        ),
+        /// Client requests the network version.
+        QueryNetworkVersion (
+            {
+                0: NetworkVersion,
+                1: EOL,
+            },
+            {}
+        ),
     }
-}
 
-// TODO Macro
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn test_serverbound_decode() {
-        assert_eq!(
-            server_bound::Sentences::decode(vec!["VERSION".into()]),
-            Some(server_bound::Sentences::QueryVersion {})
-        );
-        assert_eq!(
-            server_bound::Sentences::decode(vec!["LIST".into(), "VAR".into(), "nutdev".into()]),
-            Some(server_bound::Sentences::QueryListVar {
-                ups_name: "nutdev".into()
-            })
-        );
-        assert_eq!(
-            server_bound::Sentences::decode(vec!["LIST".into(), "RW".into(), "nutdev".into()]),
-            Some(server_bound::Sentences::QueryListRw {
-                ups_name: "nutdev".into()
-            })
-        );
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        #[test]
+        fn test_decode() {
+            assert_eq!(
+                Sentences::decode(vec!["VERSION".into()]),
+                Some(Sentences::QueryVersion {})
+            );
+            assert_eq!(
+                Sentences::decode(vec!["LIST".into(), "VAR".into(), "nutdev".into()]),
+                Some(Sentences::QueryListVar {
+                    ups_name: "nutdev".into(),
+                })
+            );
+        }
     }
 }

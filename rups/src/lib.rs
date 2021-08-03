@@ -20,6 +20,7 @@ mod cmd;
 mod config;
 mod error;
 /// Bi-directional networking protocol implementation.
+#[allow(dead_code)]
 mod proto;
 #[cfg(feature = "ssl")]
 mod ssl;
