@@ -9,8 +9,6 @@ macro_rules! impl_words {
         )*
     ) => {
         pub(crate) enum Word {
-            /// A string argument.
-            Arg,
             /// End-of-line.
             EOL,
             $(
@@ -36,11 +34,23 @@ macro_rules! impl_words {
                 }
             }
 
+            /// Decodes a sequence of words.
+            /// Unrecognized words will be `None`
+            /// Returns a `Vec` of the same length as the given slice.
+            pub(crate) fn decode_words(raw: &[&str]) -> Vec<Option<Self>> {
+                let mut words = Vec::new();
+                for r in raw.iter() {
+                    words.push(Self::decode(Some(r)));
+                }
+                words.push(Some(Self::EOL));
+                words
+            }
+
             /// Encodes a `Word` into a string.
             /// This function cannot encode `Arg` or `EOL` (either returns `None`).
             pub(crate) fn encode(&self) -> Option<&str> {
                 match self {
-                    Self::Arg | Self::EOL => None,
+                    Self::EOL => None,
                     $(Self::$name => Some($word),)*
                 }
             }
@@ -109,4 +119,22 @@ impl_words! {
     Var("VAR"),
     /// Client requests the server version.
     Version("VERSION"),
+}
+
+// impl_serverbound! {
+//     QueryVersion(Version, EOL),
+//     QueryNetworkVersion(NetworkVersion, EOL),
+//     QueryHelp(Help, EOL),
+//     QueryListUps(List, Ups, EOL),
+//     QueryListVar(List, Var, Arg(ups_name), EOL),
+//     QueryListRw(List, Rw, Arg(ups_name), EOL),
+// }
+
+pub(crate) enum ServerboundSentence {
+    QueryVersion,
+    QueryNetworkVersion,
+    QueryHelp,
+    QueryListUps,
+    QueryListVar { ups_name: String },
+    QueryListRw { ups_name: String },
 }
