@@ -1,6 +1,3 @@
-///! NUT protocol implementation (v1.2).
-///! Reference: https://networkupstools.org/docs/developer-guide.chunked/ar01s09.html
-
 macro_rules! impl_words {
     (
         $(
