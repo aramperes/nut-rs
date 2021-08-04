@@ -109,7 +109,7 @@ impl TcpConnection {
             };
 
             // Wrap and override the TCP stream
-            self.stream = self.stream.upgrade_ssl(sess)?;
+            self.stream = self.stream.upgrade_ssl_client(sess)?;
         }
         Ok(self)
     }

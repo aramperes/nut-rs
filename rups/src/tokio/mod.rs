@@ -115,7 +115,7 @@ impl TcpConnection {
             let config = tokio_rustls::TlsConnector::from(std::sync::Arc::new(ssl_config));
 
             // Wrap and override the TCP stream
-            self.stream = self.stream.upgrade_ssl(config, dns_name.as_ref()).await?;
+            self.stream = self.stream.upgrade_ssl_client(config, dns_name.as_ref()).await?;
         }
         Ok(self)
     }
