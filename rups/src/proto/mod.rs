@@ -184,6 +184,34 @@ macro_rules! impl_sentences {
 
                 None
             }
+
+            /// Encodes the sentence.
+            pub(crate) fn encode(&self) -> Vec<&str> {
+                use super::Word::*;
+                match self {
+                    $(
+                        Self::$name {
+                            $($arg,)*
+                        } => {
+                            #[allow(unused_mut)]
+                            let mut words = vec![
+                                $(
+                                    $word.encode(),
+                                )*
+                            ];
+
+                            $(
+                                words[$argidx] = Some($arg);
+                            )*
+
+                            words
+                                .into_iter()
+                                .flatten()
+                                .collect()
+                        }
+                    )*
+                }
+            }
         }
     };
 }
@@ -193,9 +221,27 @@ macro_rules! test_decode {
     ([$($word:expr$(,)?)+] => $expected:expr) => {
         assert_eq!(
             Sentences::decode(vec![
-                $($word.into(),)*
+                $(String::from($word),)*
             ]),
-            $expected
+            Some($expected)
+        );
+    };
+}
+
+#[allow(unused_macros)]
+macro_rules! test_encode_decode {
+    ([$($word:expr$(,)?)+] <=> $expected:expr) => {
+        assert_eq!(
+            Sentences::decode(vec![
+                $(String::from($word),)*
+            ]),
+            Some($expected)
+        );
+        assert_eq!(
+            vec![
+                $(String::from($word),)*
+            ],
+            $expected.encode()
         );
     };
 }
@@ -519,149 +565,155 @@ pub mod server_bound {
     mod tests {
         use super::*;
         #[test]
-        fn test_decode() {
-            test_decode!(
-                ["GET", "NUMLOGINS", "nutdev"] =>
-                Some(Sentences::QueryNumLogins {
+        fn test_encode_decode() {
+            test_encode_decode!(
+                ["GET", "NUMLOGINS", "nutdev"] <=>
+                Sentences::QueryNumLogins {
                     ups_name: "nutdev".into(),
-                })
+                }
             );
-            test_decode!(
-                ["GET", "UPSDESC", "nutdev"] =>
-                Some(Sentences::QueryUpsDesc {
+            test_encode_decode!(
+                ["GET", "NUMLOGINS", "nutdev"] <=>
+                Sentences::QueryNumLogins {
                     ups_name: "nutdev".into(),
-                })
+                }
             );
-            test_decode!(
-                ["GET", "VAR", "nutdev", "test.var"] =>
-                Some(Sentences::QueryVar {
+            test_encode_decode!(
+                ["GET", "UPSDESC", "nutdev"] <=>
+                Sentences::QueryUpsDesc {
                     ups_name: "nutdev".into(),
-                    var_name: "test.var".into(),
-                })
+                }
             );
-            test_decode!(
-                ["GET", "TYPE", "nutdev", "test.var"] =>
-                Some(Sentences::QueryType {
-                    ups_name: "nutdev".into(),
-                    var_name: "test.var".into(),
-                })
-            );
-            test_decode!(
-                ["GET", "DESC", "nutdev", "test.var"] =>
-                Some(Sentences::QueryDesc {
+            test_encode_decode!(
+                ["GET", "VAR", "nutdev", "test.var"] <=>
+                Sentences::QueryVar {
                     ups_name: "nutdev".into(),
                     var_name: "test.var".into(),
-                })
+                }
             );
-            test_decode!(
-                ["GET", "CMDDESC", "nutdev", "test.cmd"] =>
-                Some(Sentences::QueryCmdDesc {
+            test_encode_decode!(
+                ["GET", "TYPE", "nutdev", "test.var"] <=>
+                Sentences::QueryType {
+                    ups_name: "nutdev".into(),
+                    var_name: "test.var".into(),
+                }
+            );
+            test_encode_decode!(
+                ["GET", "DESC", "nutdev", "test.var"] <=>
+                Sentences::QueryDesc {
+                    ups_name: "nutdev".into(),
+                    var_name: "test.var".into(),
+                }
+            );
+            test_encode_decode!(
+                ["GET", "CMDDESC", "nutdev", "test.cmd"] <=>
+                Sentences::QueryCmdDesc {
                     ups_name: "nutdev".into(),
                     cmd_name: "test.cmd".into(),
-                })
+                }
             );
-            test_decode!(
-                ["LIST", "VAR", "nutdev"] =>
-                Some(Sentences::QueryListVar {
+            test_encode_decode!(
+                ["LIST", "VAR", "nutdev"] <=>
+                Sentences::QueryListVar {
                     ups_name: "nutdev".into(),
-                })
+                }
             );
-            test_decode!(
-                ["LIST", "RW", "nutdev"] =>
-                Some(Sentences::QueryListRw {
+            test_encode_decode!(
+                ["LIST", "RW", "nutdev"] <=>
+                Sentences::QueryListRw {
                     ups_name: "nutdev".into(),
-                })
+                }
             );
-            test_decode!(
-                ["LIST", "CMD", "nutdev"] =>
-                Some(Sentences::QueryListCmd {
+            test_encode_decode!(
+                ["LIST", "CMD", "nutdev"] <=>
+                Sentences::QueryListCmd {
                     ups_name: "nutdev".into(),
-                })
+                }
             );
-            test_decode!(
-                ["LIST", "ENUM", "nutdev", "test.var"] =>
-                Some(Sentences::QueryListEnum {
-                    ups_name: "nutdev".into(),
-                    var_name: "test.var".into(),
-                })
-            );
-            test_decode!(
-                ["LIST", "RANGE", "nutdev", "test.var"] =>
-                Some(Sentences::QueryListRange {
+            test_encode_decode!(
+                ["LIST", "ENUM", "nutdev", "test.var"] <=>
+                Sentences::QueryListEnum {
                     ups_name: "nutdev".into(),
                     var_name: "test.var".into(),
-                })
+                }
             );
-            test_decode!(
-                ["LIST", "CLIENT", "nutdev"] =>
-                Some(Sentences::QueryListClient {
+            test_encode_decode!(
+                ["LIST", "RANGE", "nutdev", "test.var"] <=>
+                Sentences::QueryListRange {
                     ups_name: "nutdev".into(),
-                })
+                    var_name: "test.var".into(),
+                }
             );
-            test_decode!(
-                ["SET", "VAR", "nutdev", "test.var", "something"] =>
-                Some(Sentences::ExecSetVar {
+            test_encode_decode!(
+                ["LIST", "CLIENT", "nutdev"] <=>
+                Sentences::QueryListClient {
+                    ups_name: "nutdev".into(),
+                }
+            );
+            test_encode_decode!(
+                ["SET", "VAR", "nutdev", "test.var", "something"] <=>
+                Sentences::ExecSetVar {
                     ups_name: "nutdev".into(),
                     var_name: "test.var".into(),
                     value: "something".into(),
-                })
+                }
             );
-            test_decode!(
-                ["INSTCMD", "nutdev", "test.cmd"] =>
-                Some(Sentences::ExecInstCmd {
+            test_encode_decode!(
+                ["INSTCMD", "nutdev", "test.cmd"] <=>
+                Sentences::ExecInstCmd {
                     ups_name: "nutdev".into(),
                     cmd_name: "test.cmd".into(),
-                })
+                }
             );
-            test_decode!(
-                ["LOGOUT"] =>
-                Some(Sentences::ExecLogout {})
+            test_encode_decode!(
+                ["LOGOUT"] <=>
+                Sentences::ExecLogout {}
             );
-            test_decode!(
-                ["LOGIN", "nutdev"] =>
-                Some(Sentences::ExecLogin {
+            test_encode_decode!(
+                ["LOGIN", "nutdev"] <=>
+                Sentences::ExecLogin {
                     ups_name: "nutdev".into(),
-                })
+                }
             );
-            test_decode!(
-                ["MASTER", "nutdev"] =>
-                Some(Sentences::ExecMaster {
+            test_encode_decode!(
+                ["MASTER", "nutdev"] <=>
+                Sentences::ExecMaster {
                     ups_name: "nutdev".into(),
-                })
+                }
             );
-            test_decode!(
-                ["FSD", "nutdev"] =>
-                Some(Sentences::ExecForcedShutDown {
+            test_encode_decode!(
+                ["FSD", "nutdev"] <=>
+                Sentences::ExecForcedShutDown {
                     ups_name: "nutdev".into(),
-                })
+                }
             );
-            test_decode!(
-                ["PASSWORD", "topsecret"] =>
-                Some(Sentences::SetPassword {
+            test_encode_decode!(
+                ["PASSWORD", "topsecret"] <=>
+                Sentences::SetPassword {
                     password: "topsecret".into(),
-                })
+                }
             );
-            test_decode!(
-                ["USERNAME", "john"] =>
-                Some(Sentences::SetUsername {
+            test_encode_decode!(
+                ["USERNAME", "john"] <=>
+                Sentences::SetUsername {
                     username: "john".into(),
-                })
+                }
             );
-            test_decode!(
-                ["STARTTLS"] =>
-                Some(Sentences::ExecStartTLS {})
+            test_encode_decode!(
+                ["STARTTLS"] <=>
+                Sentences::ExecStartTLS {}
             );
-            test_decode!(
-                ["HELP"] =>
-                Some(Sentences::QueryHelp {})
+            test_encode_decode!(
+                ["HELP"] <=>
+                Sentences::QueryHelp {}
             );
-            test_decode!(
-                ["VERSION"] =>
-                Some(Sentences::QueryVersion {})
+            test_encode_decode!(
+                ["VERSION"] <=>
+                Sentences::QueryVersion {}
             );
-            test_decode!(
-                ["NETVER"] =>
-                Some(Sentences::QueryNetworkVersion {})
+            test_encode_decode!(
+                ["NETVER"] <=>
+                Sentences::QueryNetworkVersion {}
             );
         }
     }
