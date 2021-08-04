@@ -113,7 +113,7 @@ pub trait Sentence: Eq + Sized + Into<crate::Result<Self>> {
     fn encode(&self) -> Vec<&str>;
 
     /// Returns an error if the sentence does not match what was expected.
-    fn as_matching<F: FnOnce(&Self) -> bool>(self, matcher: F) -> crate::Result<Self> {
+    fn matching<F: FnOnce(&Self) -> bool>(self, matcher: F) -> crate::Result<Self> {
         if matcher(&self) {
             Ok(self)
         } else {
@@ -122,7 +122,7 @@ pub trait Sentence: Eq + Sized + Into<crate::Result<Self>> {
     }
 
     /// Returns an error if the sentence is not equal to what was expected.
-    fn as_exactly(self, expected: Self) -> crate::Result<Self> {
+    fn exactly(self, expected: Self) -> crate::Result<Self> {
         if expected == self {
             Ok(self)
         } else {

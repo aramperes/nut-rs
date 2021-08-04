@@ -129,7 +129,7 @@ impl ConnectionStream {
     }
 
     /// Wraps the current stream with a `BufReader`.
-    pub fn buffered(mut self) -> ConnectionStream {
+    pub fn buffered(self) -> ConnectionStream {
         Self::Buffered(Box::new(BufReader::new(self)))
     }
 
@@ -137,10 +137,11 @@ impl ConnectionStream {
     /// If the current stream is not buffered, it returns itself (no-op).
     ///
     /// Note that, if the stream is buffered, any un-consumed data will be discarded.
-    pub fn unbuffered(mut self) -> ConnectionStream {
-        match self {
-            Self::Buffered(buf) => buf.into_inner(),
-            _ => self,
+    pub fn unbuffered(self) -> ConnectionStream {
+        if let Self::Buffered(buf) = self {
+            buf.into_inner()
+        } else {
+            self
         }
     }
 }
@@ -172,9 +173,8 @@ impl BufRead for ConnectionStream {
     }
 
     fn consume(&mut self, amt: usize) {
-        match self {
-            Self::Buffered(reader) => reader.consume(amt),
-            _ => (),
+        if let Self::Buffered(reader) = self {
+            reader.consume(amt)
         }
     }
 }
@@ -215,12 +215,11 @@ impl Write for ConnectionStream {
 mod tests {
     use super::ConnectionStream;
     use crate::proto::{ClientSentences, Sentence, ServerSentences};
-    use std::io::{Read, Write};
 
     #[test]
     fn read_write_sentence() {
-        let mut client_stream = mockstream::SharedMockStream::new();
-        let mut server_stream = client_stream.clone();
+        let client_stream = mockstream::SharedMockStream::new();
+        let server_stream = client_stream.clone();
 
         let mut client_stream = ConnectionStream::Mock(client_stream).buffered();
         let mut server_stream = ConnectionStream::Mock(server_stream).buffered();
@@ -253,10 +252,10 @@ mod tests {
             .expect("Failed to write UPS LIST");
 
         // Client reads list of UPS devices.
-        let sentence = client_stream
+        client_stream
             .read_sentence::<ClientSentences>()
             .expect("Failed to read BEGIN LIST UPS")
-            .as_exactly(ClientSentences::BeginListUps {})
+            .exactly(ClientSentences::BeginListUps {})
             .unwrap();
 
         let sentences: Vec<ClientSentences> = client_stream
@@ -285,10 +284,10 @@ mod tests {
             .expect("Failed to write LOGIN nutdev0");
 
         // Server receives login
-        let sentence = server_stream
+        let _sentence = server_stream
             .read_sentence::<ServerSentences>()
             .expect("Failed to read LOGIN nutdev0")
-            .as_exactly(ServerSentences::ExecLogin {
+            .exactly(ServerSentences::ExecLogin {
                 ups_name: "nutdev0".into(),
             })
             .unwrap();
