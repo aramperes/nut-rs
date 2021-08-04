@@ -82,6 +82,16 @@ macro_rules! impl_words {
                     false
                 }
             }
+
+            /// Whether the `Word` matches all words in the vec, starting at the given index.
+            pub(crate) fn matches_until_end(&self, start: usize, others: &[Option<Self>]) -> bool {
+                for i in start..others.len() {
+                    if !self.matches(others.get(i)) {
+                        return false;
+                    }
+                }
+                true
+            }
         }
     };
 }
@@ -102,6 +112,12 @@ macro_rules! impl_sentences {
                         $argidx:tt: $arg:ident,
                     )*
                 }
+                $(
+                    ,{
+                        $(#[$varargattr:meta])+
+                        $varargidx:tt...: $vararg:ident
+                    }
+                )?
             ),
         )*
     ) => {
@@ -115,6 +131,10 @@ macro_rules! impl_sentences {
                         $(#[$argattr])*
                         $arg: String,
                     )*
+                    $(
+                        $(#[$varargattr])*
+                        $vararg: Vec<String>,
+                    )*
                 },
             )*
         }
@@ -127,13 +147,16 @@ macro_rules! impl_sentences {
                 let words = Word::decode_words(raw.as_slice());
 
                 $(
-                    if true $(&& $word.matches(words.get($wordidx)))* {
+                    if true
+                        $(&& $word.matches(words.get($wordidx)))*
+                        $(&& Arg.matches_until_end($varargidx, &words))*
+                    {
                         return Some($name {
                             $($arg: raw[$argidx].to_owned(),)*
+                            $($vararg: raw[$varargidx..].to_owned(),)*
                         })
                     }
                 )*
-
                 None
             }
 
@@ -144,6 +167,7 @@ macro_rules! impl_sentences {
                     $(
                         Self::$name {
                             $($arg,)*
+                            $($vararg,)*
                         } => {
                             #[allow(unused_mut)]
                             let mut words = vec![
@@ -154,6 +178,12 @@ macro_rules! impl_sentences {
 
                             $(
                                 words[$argidx] = Some($arg);
+                            )*
+
+                            $(
+                                for vararg in $vararg {
+                                    words.push(Some(vararg));
+                                }
                             )*
 
                             words

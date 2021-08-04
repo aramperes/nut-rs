@@ -36,16 +36,18 @@ impl_sentences! {
         {}
     ),
     /// Server returns an error.
-    /// TODO: Support "extra" vararg.
     RespondErr (
         {
             0: Err,
             1: Arg,
-            2: EOL,
         },
         {
             /// The error code.
             1: message,
+        },
+        {
+            /// Extra information about the error.
+            2...: extras
         }
     ),
     /// Server responds with the number of prior logins to the given `ups_name` device.
@@ -97,22 +99,21 @@ impl_sentences! {
         }
     ),
     /// Server responds with the type of the given `var_name` variable for the UPS device.
-    /// TODO: Support multiple type words (3...).
     RespondType (
         {
             0: Type,
             1: Arg,
             2: Arg,
-            3: Arg,
-            4: EOL,
         },
         {
             /// The name of the UPS device.
             1: ups_name,
             /// The name of the variable.
             2: var_name,
-            /// The type of the variable.
-            3: var_type,
+        },
+        {
+            /// The variable definition (RW, ENUN, STRING...)
+            3...: var_types
         }
     ),
     /// Server responds with the description of the given `var_name` variable for the UPS device.
@@ -483,6 +484,14 @@ mod tests {
             ["ERR", "ACCESS-DENIED"] <=>
             Sentences::RespondErr {
                 message: "ACCESS-DENIED".into(),
+                extras: vec![],
+            }
+        );
+        test_encode_decode!(
+            ["ERR", "ACCESS-DENIED", "extra1", "extra2"] <=>
+            Sentences::RespondErr {
+                message: "ACCESS-DENIED".into(),
+                extras: vec!["extra1".into(), "extra2".into()],
             }
         );
         test_encode_decode!(
@@ -508,11 +517,11 @@ mod tests {
             }
         );
         test_encode_decode!(
-            ["TYPE", "nutdev", "input.transfer.low", "ENUM"] <=>
+            ["TYPE", "nutdev", "input.transfer.low", "ENUM", "RW"] <=>
             Sentences::RespondType {
                 ups_name: "nutdev".into(),
                 var_name: "input.transfer.low".into(),
-                var_type: "ENUM".into(),
+                var_types: vec!["ENUM".into(), "RW".into()],
             }
         );
         test_encode_decode!(
