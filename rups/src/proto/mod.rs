@@ -104,6 +104,15 @@ macro_rules! impl_words {
     };
 }
 
+/// A NUT protocol sentence that can be encoded and decoded from a Vector of strings.
+pub trait Sentence: Sized + Into<crate::Result<Self>> {
+    /// Decodes a sentence. Returns `None` if the pattern cannot be recognized.
+    fn decode(raw: Vec<String>) -> Option<Self>;
+
+    /// Encodes the sentence.
+    fn encode(&self) -> Vec<&str>;
+}
+
 /// Implements the list of sentences, which are combinations
 /// of words that form commands (serverbound) and responses (clientbound).
 macro_rules! impl_sentences {
@@ -147,9 +156,8 @@ macro_rules! impl_sentences {
             )*
         }
 
-        impl Sentences {
-            /// Decodes a sentence. Returns `None` if the pattern cannot be recognized.
-            pub(crate) fn decode(raw: Vec<String>) -> Option<Sentences> {
+        impl crate::proto::Sentence for Sentences {
+            fn decode(raw: Vec<String>) -> Option<Sentences> {
                 use super::{Word::*, *};
                 use Sentences::*;
                 let words = Word::decode_words(raw.as_slice());
@@ -168,8 +176,7 @@ macro_rules! impl_sentences {
                 None
             }
 
-            /// Encodes the sentence.
-            pub(crate) fn encode(&self) -> Vec<&str> {
+            fn encode(&self) -> Vec<&str> {
                 use super::Word::*;
                 match self {
                     $(

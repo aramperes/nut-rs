@@ -5,6 +5,7 @@ use crate::blocking::stream::ConnectionStream;
 use crate::cmd::{Command, Response};
 use crate::{Config, Error, Host, NutError};
 
+mod client;
 mod stream;
 
 /// A blocking NUT client connection.

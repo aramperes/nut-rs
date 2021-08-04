@@ -62,6 +62,8 @@ pub enum NutError {
     SslInvalidHostname,
     /// Occurs when the client used a feature that is disabled by the server.
     FeatureNotConfigured,
+    /// The client or server sent a message that could not be processed.
+    NotProcessable,
     /// Generic (usually internal) client error.
     Generic(String),
 }
@@ -99,14 +101,15 @@ impl fmt::Display for NutError {
                 "Given hostname cannot be used for a strict SSL connection"
             ),
             Self::FeatureNotConfigured => write!(f, "Feature not configured by server"),
+            Self::NotProcessable => write!(f, "Message could not be processed"),
             Self::Generic(msg) => write!(f, "NUT error: {}", msg),
         }
     }
 }
 
-impl<T: AsRef<ClientSentences>> From<T> for NutError {
-    fn from(sentence: T) -> Self {
-        if let ClientSentences::RespondErr { message, .. } = sentence.as_ref() {
+impl From<ClientSentences> for NutError {
+    fn from(sentence: ClientSentences) -> Self {
+        if let ClientSentences::RespondErr { message, .. } = sentence {
             match message.as_str() {
                 "ACCESS-DENIED" => Self::AccessDenied,
                 "UNKNOWN-UPS" => Self::UnknownUps,
@@ -135,7 +138,7 @@ impl<T: AsRef<ClientSentences>> From<T> for NutError {
             }
         } else {
             // This is not supposed to happen...
-            panic!("Cannot convert {:?} into NutError", sentence.as_ref());
+            panic!("Cannot convert {:?} into NutError", sentence);
         }
     }
 }
@@ -162,6 +165,14 @@ impl Error {
     /// Constructs a generic rups error.
     pub fn generic<T: ToString>(message: T) -> Self {
         NutError::generic(message.to_string()).into()
+    }
+
+    /// Constructs an EOF (end-of-file) error.
+    pub fn eof() -> Self {
+        Self::Io(io::Error::new(
+            io::ErrorKind::UnexpectedEof,
+            "Reached end of stream while sentence was expected",
+        ))
     }
 }
 

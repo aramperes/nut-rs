@@ -91,6 +91,15 @@ impl_sentences! {
             3: cmd_name,
         }
     ),
+    /// Client requests the list of UPS devices.
+    QueryListUps (
+        {
+            0: List,
+            1: Ups,
+            2: EOL,
+        },
+        {}
+    ),
     /// Client requests the list of variables for the given `ups_name` device.
     QueryListVar (
         {
@@ -313,10 +322,17 @@ impl_sentences! {
     ),
 }
 
+#[allow(clippy::from_over_into)]
+impl Into<crate::Result<Self>> for Sentences {
+    fn into(self) -> crate::Result<Sentences> {
+        Ok(self)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::Sentences;
-    use crate::proto::test_encode_decode;
+    use crate::proto::{test_encode_decode, Sentence};
     #[test]
     fn test_encode_decode() {
         test_encode_decode!(
@@ -370,6 +386,10 @@ mod tests {
             Sentences::QueryListVar {
                 ups_name: "nutdev".into(),
             }
+        );
+        test_encode_decode!(
+            ["LIST", "UPS"] <=>
+            Sentences::QueryListUps {}
         );
         test_encode_decode!(
             ["LIST", "RW", "nutdev"] <=>

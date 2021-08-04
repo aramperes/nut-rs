@@ -1,4 +1,5 @@
 use crate::proto::impl_sentences;
+use crate::{Error, NutError};
 
 impl_sentences! {
     /// A generic successful response with no additional data.
@@ -456,9 +457,20 @@ impl_sentences! {
     ),
 }
 
+#[allow(clippy::from_over_into)]
+impl Into<crate::Result<Self>> for Sentences {
+    fn into(self) -> crate::Result<Sentences> {
+        if let Sentences::RespondErr { .. } = &self {
+            Err(Error::Nut(NutError::from(self)))
+        } else {
+            Ok(self)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::proto::test_encode_decode;
+    use crate::proto::{test_encode_decode, Sentence};
 
     use super::Sentences;
 

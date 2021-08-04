@@ -3,7 +3,7 @@
 ///
 /// Returns `None` if the sentence cannot be split safely (usually unbalanced quotation marks).
 pub fn split_sentence<T: AsRef<str>>(sentence: T) -> Option<Vec<String>> {
-    shell_words::split(sentence.as_ref()).ok()
+    shell_words::split(sentence.as_ref().trim_end_matches('\n')).ok()
 }
 
 /// Joins a collection of words (`&str`) into one sentence string,
@@ -13,7 +13,7 @@ where
     I: IntoIterator<Item = S>,
     S: AsRef<str>,
 {
-    shell_words::join(words)
+    format!("{}\n", shell_words::join(words))
 }
 
 #[cfg(test)]
@@ -34,8 +34,8 @@ mod tests {
 
     #[test]
     fn test_join() {
-        assert_eq!(join_sentence(vec!["AbC", "dEf", "GHi"]), "AbC dEf GHi",);
-        assert_eq!(join_sentence(vec!["AbC dEf", "GHi"]), "'AbC dEf' GHi",);
-        assert_eq!(join_sentence(vec!["\"AbC dEf", "GHi"]), "'\"AbC dEf' GHi",);
+        assert_eq!(join_sentence(vec!["AbC", "dEf", "GHi"]), "AbC dEf GHi\n",);
+        assert_eq!(join_sentence(vec!["AbC dEf", "GHi"]), "'AbC dEf' GHi\n",);
+        assert_eq!(join_sentence(vec!["\"AbC dEf", "GHi"]), "'\"AbC dEf' GHi\n",);
     }
 }

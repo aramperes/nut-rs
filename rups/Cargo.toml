@@ -21,6 +21,10 @@ webpki-roots = { version = "0.21", optional = true }
 tokio = { version = "1", optional = true, features = ["net", "io-util", "rt"] }
 tokio-rustls = { version = "0.22", optional = true }
 
+[dev-dependencies]
+mockstream = "0.0.3"
+tokio-mockstream = "1.1.0"
+
 [features]
 default = []
 ssl = ["rustls", "rustls/dangerous_configuration", "webpki", "webpki-roots"]
