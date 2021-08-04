@@ -11,6 +11,9 @@ pub mod server;
 /// Utilities for encoding and decoding packets.
 pub mod util;
 
+pub use client::Sentences as ClientSentences;
+pub use server::Sentences as ServerSentences;
+
 /// Macro that implements the list of "words" in the NUT network protocol.
 macro_rules! impl_words {
     (
