@@ -1,3 +1,4 @@
+use crate::Error;
 use core::fmt;
 use std::collections::HashSet;
 use std::convert::TryFrom;
@@ -185,7 +186,7 @@ pub(crate) enum VariableType {
 }
 
 impl TryFrom<&str> for VariableType {
-    type Error = crate::ClientError;
+    type Error = crate::Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
@@ -200,10 +201,10 @@ impl TryFrom<&str> for VariableType {
                         .nth(1)
                         .map(|s| s.parse().ok())
                         .flatten()
-                        .ok_or_else(|| crate::ClientError::generic("Invalid STRING definition"))?;
+                        .ok_or_else(|| Error::generic("Invalid STRING definition"))?;
                     Ok(Self::String(size))
                 } else {
-                    Err(crate::ClientError::generic(format!(
+                    Err(Error::generic(format!(
                         "Unrecognized variable type: {}",
                         value
                     )))
@@ -259,7 +260,7 @@ impl VariableDefinition {
 }
 
 impl<A: ToString> TryFrom<(A, Vec<&str>)> for VariableDefinition {
-    type Error = crate::ClientError;
+    type Error = crate::Error;
 
     fn try_from(value: (A, Vec<&str>)) -> Result<Self, Self::Error> {
         Ok(VariableDefinition(

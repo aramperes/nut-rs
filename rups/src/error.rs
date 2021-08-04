@@ -99,7 +99,7 @@ impl fmt::Display for NutError {
                 "Given hostname cannot be used for a strict SSL connection"
             ),
             Self::FeatureNotConfigured => write!(f, "Feature not configured by server"),
-            Self::Generic(msg) => write!(f, "Client error: {}", msg),
+            Self::Generic(msg) => write!(f, "NUT error: {}", msg),
         }
     }
 }
@@ -149,23 +149,23 @@ impl NutError {
 
 impl std::error::Error for NutError {}
 
-/// Encapsulation for errors emitted by the client library.
+/// Encapsulation for errors emitted by the `rups` library.
 #[derive(Debug)]
-pub enum ClientError {
+pub enum Error {
     /// Encapsulates IO errors.
     Io(io::Error),
-    /// Encapsulates NUT and client-specific errors.
+    /// Encapsulates NUT errors.
     Nut(NutError),
 }
 
-impl ClientError {
+impl Error {
     /// Constructs a generic rups error.
     pub fn generic<T: ToString>(message: T) -> Self {
         NutError::generic(message.to_string()).into()
     }
 }
 
-impl fmt::Display for ClientError {
+impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Io(err) => err.fmt(f),
@@ -174,19 +174,19 @@ impl fmt::Display for ClientError {
     }
 }
 
-impl std::error::Error for ClientError {}
+impl std::error::Error for Error {}
 
-impl From<io::Error> for ClientError {
+impl From<io::Error> for Error {
     fn from(err: io::Error) -> Self {
-        ClientError::Io(err)
+        Error::Io(err)
     }
 }
 
-impl From<NutError> for ClientError {
+impl From<NutError> for Error {
     fn from(err: NutError) -> Self {
-        ClientError::Nut(err)
+        Error::Nut(err)
     }
 }
 
-/// Result type for [`ClientError`]
-pub type Result<T> = std::result::Result<T, ClientError>;
+/// Result type for [`Error`]
+pub type Result<T> = std::result::Result<T, Error>;

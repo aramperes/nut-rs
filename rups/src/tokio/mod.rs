@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use crate::cmd::{Command, Response};
 use crate::tokio::stream::ConnectionStream;
-use crate::{Config, Host, NutError};
+use crate::{Config, Error, Host, NutError};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::TcpStream;
 
@@ -74,8 +74,8 @@ impl TcpConnection {
             self.read_response()
                 .await
                 .map_err(|e| {
-                    if let crate::ClientError::Nut(NutError::FeatureNotConfigured) = e {
-                        crate::ClientError::Nut(NutError::SslNotSupported)
+                    if let Error::Nut(NutError::FeatureNotConfigured) = e {
+                        Error::Nut(NutError::SslNotSupported)
                     } else {
                         e
                     }
@@ -101,10 +101,10 @@ impl TcpConnection {
                     .config
                     .host
                     .hostname()
-                    .ok_or(crate::ClientError::Nut(NutError::SslInvalidHostname))?;
+                    .ok_or(Error::Nut(NutError::SslInvalidHostname))?;
 
                 dns_name = webpki::DNSNameRef::try_from_ascii_str(&hostname)
-                    .map_err(|_| crate::ClientError::Nut(NutError::SslInvalidHostname))?
+                    .map_err(|_| Error::Nut(NutError::SslInvalidHostname))?
                     .to_owned();
 
                 ssl_config
@@ -115,7 +115,10 @@ impl TcpConnection {
             let config = tokio_rustls::TlsConnector::from(std::sync::Arc::new(ssl_config));
 
             // Wrap and override the TCP stream
-            self.stream = self.stream.upgrade_ssl_client(config, dns_name.as_ref()).await?;
+            self.stream = self
+                .stream
+                .upgrade_ssl_client(config, dns_name.as_ref())
+                .await?;
         }
         Ok(self)
     }

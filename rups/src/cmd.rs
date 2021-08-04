@@ -1,7 +1,7 @@
 use core::fmt;
 use std::convert::TryFrom;
 
-use crate::{ClientError, NutError, Variable, VariableDefinition, VariableRange};
+use crate::{Error, NutError, Variable, VariableDefinition, VariableRange};
 
 #[derive(Debug, Clone)]
 pub enum Command<'a> {
@@ -118,16 +118,14 @@ pub enum Response {
 impl Response {
     pub(crate) fn from_args(mut args: Vec<String>) -> crate::Result<Response> {
         if args.is_empty() {
-            return Err(ClientError::generic(
-                "Parsing server response failed: empty line",
-            ));
+            return Err(Error::generic("Parsing server response failed: empty line"));
         }
         let cmd_name = args.remove(0);
         match cmd_name.as_str() {
             "OK" => Ok(Self::Ok),
             "ERR" => {
                 if args.is_empty() {
-                    Err(ClientError::generic("Unspecified server error"))
+                    Err(Error::generic("Unspecified server error"))
                 } else {
                     let err_type = args.remove(0);
                     match err_type.as_str() {
@@ -145,11 +143,11 @@ impl Response {
             }
             "BEGIN" => {
                 if args.is_empty() {
-                    Err(ClientError::generic("Unspecified BEGIN type"))
+                    Err(Error::generic("Unspecified BEGIN type"))
                 } else {
                     let begin_type = args.remove(0);
                     if &begin_type != "LIST" {
-                        Err(ClientError::generic(format!(
+                        Err(Error::generic(format!(
                             "Unexpected BEGIN type: {}",
                             begin_type
                         )))
@@ -161,11 +159,11 @@ impl Response {
             }
             "END" => {
                 if args.is_empty() {
-                    Err(ClientError::generic("Unspecified END type"))
+                    Err(Error::generic("Unspecified END type"))
                 } else {
                     let begin_type = args.remove(0);
                     if &begin_type != "LIST" {
-                        Err(ClientError::generic(format!(
+                        Err(Error::generic(format!(
                             "Unexpected END type: {}",
                             begin_type
                         )))
@@ -177,19 +175,17 @@ impl Response {
             }
             "VAR" => {
                 let _var_device = if args.is_empty() {
-                    Err(ClientError::generic(
-                        "Unspecified VAR device name in response",
-                    ))
+                    Err(Error::generic("Unspecified VAR device name in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
                 let var_name = if args.is_empty() {
-                    Err(ClientError::generic("Unspecified VAR name in response"))
+                    Err(Error::generic("Unspecified VAR name in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
                 let var_value = if args.is_empty() {
-                    Err(ClientError::generic("Unspecified VAR value in response"))
+                    Err(Error::generic("Unspecified VAR value in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
@@ -197,19 +193,17 @@ impl Response {
             }
             "RW" => {
                 let _var_device = if args.is_empty() {
-                    Err(ClientError::generic(
-                        "Unspecified RW device name in response",
-                    ))
+                    Err(Error::generic("Unspecified RW device name in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
                 let var_name = if args.is_empty() {
-                    Err(ClientError::generic("Unspecified RW name in response"))
+                    Err(Error::generic("Unspecified RW name in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
                 let var_value = if args.is_empty() {
-                    Err(ClientError::generic("Unspecified RW value in response"))
+                    Err(Error::generic("Unspecified RW value in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
@@ -217,14 +211,12 @@ impl Response {
             }
             "UPS" => {
                 let name = if args.is_empty() {
-                    Err(ClientError::generic("Unspecified UPS name in response"))
+                    Err(Error::generic("Unspecified UPS name in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
                 let description = if args.is_empty() {
-                    Err(ClientError::generic(
-                        "Unspecified UPS description in response",
-                    ))
+                    Err(Error::generic("Unspecified UPS description in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
@@ -232,14 +224,12 @@ impl Response {
             }
             "CLIENT" => {
                 let _device = if args.is_empty() {
-                    Err(ClientError::generic(
-                        "Unspecified CLIENT device in response",
-                    ))
+                    Err(Error::generic("Unspecified CLIENT device in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
                 let ip_address = if args.is_empty() {
-                    Err(ClientError::generic("Unspecified CLIENT IP in response"))
+                    Err(Error::generic("Unspecified CLIENT IP in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
@@ -247,12 +237,12 @@ impl Response {
             }
             "CMD" => {
                 let _device = if args.is_empty() {
-                    Err(ClientError::generic("Unspecified CMD device in response"))
+                    Err(Error::generic("Unspecified CMD device in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
                 let name = if args.is_empty() {
-                    Err(ClientError::generic("Unspecified CMD name in response"))
+                    Err(Error::generic("Unspecified CMD name in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
@@ -260,19 +250,17 @@ impl Response {
             }
             "CMDDESC" => {
                 let _device = if args.is_empty() {
-                    Err(ClientError::generic(
-                        "Unspecified CMDDESC device in response",
-                    ))
+                    Err(Error::generic("Unspecified CMDDESC device in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
                 let _name = if args.is_empty() {
-                    Err(ClientError::generic("Unspecified CMDDESC name in response"))
+                    Err(Error::generic("Unspecified CMDDESC name in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
                 let desc = if args.is_empty() {
-                    Err(ClientError::generic(
+                    Err(Error::generic(
                         "Unspecified CMDDESC description in response",
                     ))
                 } else {
@@ -282,14 +270,12 @@ impl Response {
             }
             "UPSDESC" => {
                 let _device = if args.is_empty() {
-                    Err(ClientError::generic(
-                        "Unspecified UPSDESC device in response",
-                    ))
+                    Err(Error::generic("Unspecified UPSDESC device in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
                 let desc = if args.is_empty() {
-                    Err(ClientError::generic(
+                    Err(Error::generic(
                         "Unspecified UPSDESC description in response",
                     ))
                 } else {
@@ -299,19 +285,17 @@ impl Response {
             }
             "DESC" => {
                 let _device = if args.is_empty() {
-                    Err(ClientError::generic("Unspecified DESC device in response"))
+                    Err(Error::generic("Unspecified DESC device in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
                 let _name = if args.is_empty() {
-                    Err(ClientError::generic("Unspecified DESC name in response"))
+                    Err(Error::generic("Unspecified DESC name in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
                 let desc = if args.is_empty() {
-                    Err(ClientError::generic(
-                        "Unspecified DESC description in response",
-                    ))
+                    Err(Error::generic("Unspecified DESC description in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
@@ -319,32 +303,28 @@ impl Response {
             }
             "NUMLOGINS" => {
                 let _device = if args.is_empty() {
-                    Err(ClientError::generic(
-                        "Unspecified NUMLOGINS device in response",
-                    ))
+                    Err(Error::generic("Unspecified NUMLOGINS device in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
                 let num = if args.is_empty() {
-                    Err(ClientError::generic(
-                        "Unspecified NUMLOGINS number in response",
-                    ))
+                    Err(Error::generic("Unspecified NUMLOGINS number in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
                 let num = num
                     .parse::<i32>()
-                    .map_err(|_| ClientError::generic("Invalid NUMLOGINS number in response"))?;
+                    .map_err(|_| Error::generic("Invalid NUMLOGINS number in response"))?;
                 Ok(Response::NumLogins(num))
             }
             "TYPE" => {
                 let _device = if args.is_empty() {
-                    Err(ClientError::generic("Unspecified TYPE device in response"))
+                    Err(Error::generic("Unspecified TYPE device in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
                 let name = if args.is_empty() {
-                    Err(ClientError::generic("Unspecified TYPE name in response"))
+                    Err(Error::generic("Unspecified TYPE name in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
@@ -353,22 +333,22 @@ impl Response {
             }
             "RANGE" => {
                 let _device = if args.is_empty() {
-                    Err(ClientError::generic("Unspecified RANGE device in response"))
+                    Err(Error::generic("Unspecified RANGE device in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
                 let _name = if args.is_empty() {
-                    Err(ClientError::generic("Unspecified RANGE name in response"))
+                    Err(Error::generic("Unspecified RANGE name in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
                 let min = if args.is_empty() {
-                    Err(ClientError::generic("Unspecified RANGE min in response"))
+                    Err(Error::generic("Unspecified RANGE min in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
                 let max = if args.is_empty() {
-                    Err(ClientError::generic("Unspecified RANGE max in response"))
+                    Err(Error::generic("Unspecified RANGE max in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
@@ -376,17 +356,17 @@ impl Response {
             }
             "ENUM" => {
                 let _device = if args.is_empty() {
-                    Err(ClientError::generic("Unspecified ENUM device in response"))
+                    Err(Error::generic("Unspecified ENUM device in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
                 let _name = if args.is_empty() {
-                    Err(ClientError::generic("Unspecified ENUM name in response"))
+                    Err(Error::generic("Unspecified ENUM name in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;
                 let val = if args.is_empty() {
-                    Err(ClientError::generic("Unspecified ENUM value in response"))
+                    Err(Error::generic("Unspecified ENUM value in response"))
                 } else {
                     Ok(args.remove(0))
                 }?;

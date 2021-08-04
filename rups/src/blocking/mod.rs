@@ -3,7 +3,7 @@ use std::net::{SocketAddr, TcpStream};
 
 use crate::blocking::stream::ConnectionStream;
 use crate::cmd::{Command, Response};
-use crate::{ClientError, Config, Host, NutError};
+use crate::{Config, Error, Host, NutError};
 
 mod stream;
 
@@ -71,8 +71,8 @@ impl TcpConnection {
             self.write_cmd(Command::StartTLS)?;
             self.read_response()
                 .map_err(|e| {
-                    if let crate::ClientError::Nut(NutError::FeatureNotConfigured) = e {
-                        crate::ClientError::Nut(NutError::SslNotSupported)
+                    if let Error::Nut(NutError::FeatureNotConfigured) = e {
+                        Error::Nut(NutError::SslNotSupported)
                     } else {
                         e
                     }
@@ -96,10 +96,10 @@ impl TcpConnection {
                     .config
                     .host
                     .hostname()
-                    .ok_or(ClientError::Nut(NutError::SslInvalidHostname))?;
+                    .ok_or(Error::Nut(NutError::SslInvalidHostname))?;
 
                 let dns_name = webpki::DNSNameRef::try_from_ascii_str(&hostname)
-                    .map_err(|_| ClientError::Nut(NutError::SslInvalidHostname))?;
+                    .map_err(|_| Error::Nut(NutError::SslInvalidHostname))?;
 
                 ssl_config
                     .root_store

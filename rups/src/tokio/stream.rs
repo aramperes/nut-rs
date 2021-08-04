@@ -1,4 +1,4 @@
-use std::io::Error;
+use crate::Error;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
@@ -27,10 +27,7 @@ impl ConnectionStream {
         dns_name: webpki::DNSNameRef<'_>,
     ) -> crate::Result<ConnectionStream> {
         Ok(ConnectionStream::SslClient(Box::new(
-            config
-                .connect(dns_name, self)
-                .await
-                .map_err(crate::ClientError::Io)?,
+            config.connect(dns_name, self).await.map_err(Error::Io)?,
         )))
     }
 
@@ -41,10 +38,7 @@ impl ConnectionStream {
         acceptor: tokio_rustls::TlsAcceptor,
     ) -> crate::Result<ConnectionStream> {
         Ok(ConnectionStream::SslServer(Box::new(
-            acceptor
-                .accept(self)
-                .await
-                .map_err(crate::ClientError::Io)?,
+            acceptor.accept(self).await.map_err(Error::Io)?,
         )))
     }
 }
@@ -79,7 +73,7 @@ impl AsyncWrite for ConnectionStream {
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         buf: &[u8],
-    ) -> Poll<Result<usize, Error>> {
+    ) -> Poll<std::io::Result<usize>> {
         match self.get_mut() {
             Self::Plain(stream) => {
                 let pinned = Pin::new(stream);
@@ -98,7 +92,7 @@ impl AsyncWrite for ConnectionStream {
         }
     }
 
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Error>> {
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<std::io::Result<()>> {
         match self.get_mut() {
             Self::Plain(stream) => {
                 let pinned = Pin::new(stream);
@@ -117,7 +111,7 @@ impl AsyncWrite for ConnectionStream {
         }
     }
 
-    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Error>> {
+    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<std::io::Result<()>> {
         match self.get_mut() {
             Self::Plain(stream) => {
                 let pinned = Pin::new(stream);

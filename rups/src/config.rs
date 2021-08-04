@@ -3,7 +3,7 @@ use std::convert::{TryFrom, TryInto};
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::time::Duration;
 
-use crate::ClientError;
+use crate::Error;
 
 /// A host specification.
 #[derive(Clone, Debug)]
@@ -46,16 +46,16 @@ pub struct TcpHost {
 }
 
 impl TryFrom<(String, u16)> for Host {
-    type Error = ClientError;
+    type Error = Error;
 
     fn try_from(hostname_port: (String, u16)) -> Result<Self, Self::Error> {
         let (hostname, _) = hostname_port.clone();
         let addr = hostname_port
             .to_socket_addrs()
-            .map_err(ClientError::Io)?
+            .map_err(Error::Io)?
             .next()
             .ok_or_else(|| {
-                ClientError::Io(std::io::Error::new(
+                Error::Io(std::io::Error::new(
                     std::io::ErrorKind::AddrNotAvailable,
                     "no address given",
                 ))

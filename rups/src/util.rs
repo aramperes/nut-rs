@@ -1,3 +1,4 @@
+use crate::Error;
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
 
@@ -30,7 +31,7 @@ impl<'a> Default for UpsdName<'a> {
 }
 
 impl<'a> TryFrom<&'a str> for UpsdName<'a> {
-    type Error = crate::ClientError;
+    type Error = crate::Error;
 
     fn try_from(value: &'a str) -> crate::Result<UpsdName<'a>> {
         let mut upsname: Option<&str> = None;
@@ -44,7 +45,7 @@ impl<'a> TryFrom<&'a str> for UpsdName<'a> {
                 .next()
                 .unwrap()
                 .parse::<u16>()
-                .map_err(|_| crate::ClientError::generic("Invalid port number"))?;
+                .map_err(|_| Error::generic("Invalid port number"))?;
             if prefix.contains('@') {
                 let mut split = prefix.splitn(2, '@');
                 upsname = Some(split.next().unwrap());
@@ -69,12 +70,12 @@ impl<'a> TryFrom<&'a str> for UpsdName<'a> {
 }
 
 impl<'a> TryInto<crate::Host> for UpsdName<'a> {
-    type Error = crate::ClientError;
+    type Error = crate::Error;
 
     fn try_into(self) -> crate::Result<crate::Host> {
         (self.hostname.to_owned(), self.port)
             .try_into()
-            .map_err(|_| crate::ClientError::generic("Invalid hostname/port"))
+            .map_err(|_| Error::generic("Invalid hostname/port"))
     }
 }
 
