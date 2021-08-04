@@ -1,3 +1,8 @@
+/// Client-bound protocol implementation.
+///
+/// "Client-bound" implies commands RECEIVED and DECODED by the client. The server implementation
+/// must use the same messages to ENCODE and SEND.
+pub mod client;
 /// Server-bound protocol implementation.
 ///
 /// "Server-bound" implies commands RECEIVED and DECODED by the server. The client implementation
