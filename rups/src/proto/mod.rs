@@ -86,6 +86,9 @@ macro_rules! impl_words {
             /// Whether the `Word` matches all words in the vec, starting at the given index.
             pub(crate) fn matches_until_end(&self, start: usize, others: &[Option<Self>]) -> bool {
                 for i in start..others.len() {
+                    if i == others.len() {
+                        return others[i] == Some(Self::EOL);
+                    }
                     if !self.matches(others.get(i)) {
                         return false;
                     }
