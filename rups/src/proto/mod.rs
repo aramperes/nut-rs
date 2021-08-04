@@ -220,8 +220,12 @@ impl_words! {
     Err("ERR"),
     /// Executes a forced shut down (FSD).
     Fsd("FSD"),
+    /// Server confirms forced shut down (FSD).
+    FsdSet("FSD-SET"),
     /// Serverbound query.
     Get("GET"),
+    /// Server confirms logout (this is lower-case on purpose).
+    Goodbye("Goodbye"),
     /// Client requesting a list of commands supported by the server.
     Help("HELP"),
     /// Executes an instant command.
