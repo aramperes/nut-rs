@@ -1,3 +1,4 @@
+/// Macro that implements the list of "words" in the NUT network protocol.
 macro_rules! impl_words {
     (
         $(
@@ -56,6 +57,7 @@ macro_rules! impl_words {
                 }
             }
 
+            /// Whether the `Word` matches another.
             pub(crate) fn matches(&self, other: Option<&Option<Self>>) -> bool {
                 if let Some(other) = other {
                     if self == &Word::Arg {
@@ -73,69 +75,8 @@ macro_rules! impl_words {
     };
 }
 
-impl_words! {
-    /// Begins a `LIST`.
-    Begin("BEGIN"),
-    /// Describes a client connected to a UPS.
-    Client("CLIENT"),
-    /// Represents an executable command.
-    Cmd("CMD"),
-    /// Describes a command (`CMD`).
-    CmdDesc("CMDDESC"),
-    /// Describes a variable (`VAR` or `RW`).
-    Desc("DESC"),
-    /// Ends a block of sentences.
-    End("END"),
-    /// An enumerable type.
-    Enum("ENUM"),
-    /// An error response.
-    Err("ERR"),
-    /// Executes a forced shut down (FSD).
-    Fsd("FSD"),
-    /// Serverbound query.
-    Get("GET"),
-    /// Client requesting a list of commands supported by the server.
-    Help("HELP"),
-    /// Executes an instant command.
-    InstCmd("INSTCMD"),
-    /// Queries or describes a list.
-    List("LIST"),
-    /// Client requests login to a UPS device.
-    Login("LOGIN"),
-    /// Client logs out.
-    Logout("LOGOUT"),
-    /// Client verifying it has master-level access to the UPS device.
-    Master("MASTER"),
-    /// Client requests the network version.
-    NetworkVersion("NETVER"),
-    /// Represents the amount of logins to a UPS device.
-    NumLogins("NUMLOGINS"),
-    /// Clientbound response for a good outcome.
-    Ok("OK"),
-    /// Client setting password.
-    Password("PASSWORD"),
-    /// Represents a range of numerical values.
-    Range("RANGE"),
-    /// Represents a mutable variable.
-    Rw("RW"),
-    /// Client requests to set the value of a mutable variable.
-    Set("SET"),
-    /// Client requests the connection be upgraded to TLS.
-    StartTLS("STARTTLS"),
-    /// Represents the type of a variable.
-    Type("TYPE"),
-    /// Represents a UPS device.
-    Ups("UPS"),
-    /// Represents the description of a UPS device.
-    UpsDesc("UPSDESC"),
-    /// Client setting username.
-    Username("USERNAME"),
-    /// Represents a variable.
-    Var("VAR"),
-    /// Client requests the server version.
-    Version("VERSION"),
-}
-
+/// Implements the list of sentences, which are combinations
+/// of words that form commands (serverbound) and responses (clientbound).
 macro_rules! impl_sentences {
     (
         $(
@@ -216,18 +157,21 @@ macro_rules! impl_sentences {
     };
 }
 
-#[allow(unused_macros)]
-macro_rules! test_decode {
-    ([$($word:expr$(,)?)+] => $expected:expr) => {
-        assert_eq!(
-            Sentences::decode(vec![
-                $(String::from($word),)*
-            ]),
-            Some($expected)
-        );
-    };
-}
-
+/// Macro that asserts the encoding and decoding of a valid sentence.
+///
+/// The two arguments, separated by `<=>`, are:
+/// 1. the encoded sentence, e.g. `["GET", "VAR", "nutdev", "test.var"]`
+/// 2. the decoded sentence
+///
+/// ```
+///  test_encode_decode!(
+///      ["GET", "VAR", "nutdev", "test.var"] <=>
+///      Sentences::QueryVar {
+///          ups_name: "nutdev".into(),
+///          var_name: "test.var".into(),
+///      }
+///  );
+/// ```
 #[allow(unused_macros)]
 macro_rules! test_encode_decode {
     ([$($word:expr$(,)?)+] <=> $expected:expr) => {
@@ -244,6 +188,69 @@ macro_rules! test_encode_decode {
             $expected.encode()
         );
     };
+}
+
+impl_words! {
+    /// Begins a `LIST`.
+    Begin("BEGIN"),
+    /// Describes a client connected to a UPS.
+    Client("CLIENT"),
+    /// Represents an executable command.
+    Cmd("CMD"),
+    /// Describes a command (`CMD`).
+    CmdDesc("CMDDESC"),
+    /// Describes a variable (`VAR` or `RW`).
+    Desc("DESC"),
+    /// Ends a block of sentences.
+    End("END"),
+    /// An enumerable type.
+    Enum("ENUM"),
+    /// An error response.
+    Err("ERR"),
+    /// Executes a forced shut down (FSD).
+    Fsd("FSD"),
+    /// Serverbound query.
+    Get("GET"),
+    /// Client requesting a list of commands supported by the server.
+    Help("HELP"),
+    /// Executes an instant command.
+    InstCmd("INSTCMD"),
+    /// Queries or describes a list.
+    List("LIST"),
+    /// Client requests login to a UPS device.
+    Login("LOGIN"),
+    /// Client logs out.
+    Logout("LOGOUT"),
+    /// Client verifying it has master-level access to the UPS device.
+    Master("MASTER"),
+    /// Client requests the network version.
+    NetworkVersion("NETVER"),
+    /// Represents the amount of logins to a UPS device.
+    NumLogins("NUMLOGINS"),
+    /// Clientbound response for a good outcome.
+    Ok("OK"),
+    /// Client setting password.
+    Password("PASSWORD"),
+    /// Represents a range of numerical values.
+    Range("RANGE"),
+    /// Represents a mutable variable.
+    Rw("RW"),
+    /// Client requests to set the value of a mutable variable.
+    Set("SET"),
+    /// Client requests the connection be upgraded to TLS.
+    StartTLS("STARTTLS"),
+    /// Represents the type of a variable.
+    Type("TYPE"),
+    /// Represents a UPS device.
+    Ups("UPS"),
+    /// Represents the description of a UPS device.
+    UpsDesc("UPSDESC"),
+    /// Client setting username.
+    Username("USERNAME"),
+    /// Represents a variable.
+    Var("VAR"),
+    /// Client requests the server version.
+    Version("VERSION"),
 }
 
 /// Messages decoded by the server.
