@@ -105,12 +105,30 @@ macro_rules! impl_words {
 }
 
 /// A NUT protocol sentence that can be encoded and decoded from a Vector of strings.
-pub trait Sentence: Sized + Into<crate::Result<Self>> {
+pub trait Sentence: Eq + Sized + Into<crate::Result<Self>> {
     /// Decodes a sentence. Returns `None` if the pattern cannot be recognized.
     fn decode(raw: Vec<String>) -> Option<Self>;
 
     /// Encodes the sentence.
     fn encode(&self) -> Vec<&str>;
+
+    /// Returns an error if the sentence does not match what was expected.
+    fn as_matching<F: FnOnce(&Self) -> bool>(self, matcher: F) -> crate::Result<Self> {
+        if matcher(&self) {
+            Ok(self)
+        } else {
+            Err(Error::Nut(NutError::UnexpectedResponse))
+        }
+    }
+
+    /// Returns an error if the sentence is not equal to what was expected.
+    fn as_exactly(self, expected: Self) -> crate::Result<Self> {
+        if expected == self {
+            Ok(self)
+        } else {
+            Err(Error::Nut(NutError::UnexpectedResponse))
+        }
+    }
 }
 
 /// Implements the list of sentences, which are combinations
@@ -313,6 +331,7 @@ impl_words! {
     Version("VERSION"),
 }
 
+use crate::{Error, NutError};
 pub(crate) use impl_sentences;
 #[cfg(test)]
 pub(crate) use test_encode_decode;
