@@ -8,6 +8,8 @@ pub mod client;
 /// "Server-bound" implies commands RECEIVED and DECODED by the server. The client implementation
 /// must use the same messages to ENCODE and SEND.
 pub mod server;
+/// Utilities for encoding and decoding packets.
+pub mod util;
 
 /// Macro that implements the list of "words" in the NUT network protocol.
 macro_rules! impl_words {
