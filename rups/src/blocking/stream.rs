@@ -284,7 +284,7 @@ mod tests {
             .expect("Failed to write LOGIN nutdev0");
 
         // Server receives login
-        let _sentence = server_stream
+        server_stream
             .read_sentence::<ServerSentences>()
             .expect("Failed to read LOGIN nutdev0")
             .exactly(ServerSentences::ExecLogin {
