@@ -693,6 +693,37 @@ macro_rules! implement_action_commands {
     };
 }
 
+/// A macro for implementing client action commands that return `OK`.
+///
+/// Each function should return the sentence to pass.
+macro_rules! implement_client_action_commands {
+    (
+        $(
+            $(#[$attr:meta])+
+            $vis:vis fn $name:ident($($argname:ident: $argty:ty),*) {
+                $cmd:block,
+                $ret:block
+            }
+        )*
+    ) => {
+        impl crate::blocking::Client {
+            $(
+                $(#[$attr])*
+                #[allow(dead_code)]
+                $vis fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<()> {
+                    use crate::proto::{Sentence, ClientSentences, ClientSentences::*, ServerSentences::*};
+                    self.stream
+                        .write_sentence(&$cmd)?;
+                    self.stream
+                        .read_sentence::<ClientSentences>()?
+                        .exactly($ret)
+                        .map(|_| ())
+                }
+            )*
+        }
+    };
+}
+
 implement_list_commands! {
     /// Queries a list of UPS devices.
     pub fn list_ups() -> Vec<(String, String)> {
@@ -833,5 +864,37 @@ implement_action_commands! {
     /// Gracefully shuts down the connection.
     pub(crate) fn logout() {
         Command::Logout
+    }
+}
+
+implement_client_action_commands! {
+    /// Sends the login username.
+    pub(crate) fn set_username(username: String) {
+        { SetUsername { username } },
+        { GenericOk {} }
+    }
+
+    /// Sends the login password.
+    pub(crate) fn set_password(password: String) {
+        { SetPassword { password } },
+        { GenericOk {} }
+    }
+
+    /// Executes the login.
+    pub(crate) fn exec_login(ups_name: String) {
+        { ExecLogin { ups_name } },
+        { GenericOk {} }
+    }
+
+    /// Executes the logout.
+    pub(crate) fn exec_logout() {
+        { ExecLogout {} },
+        { LogoutOk {} }
+    }
+
+    /// Asks the server to upgrade to TLS.
+    pub(crate) fn exec_start_tls() {
+        { ExecStartTLS {} },
+        { StartTLSOk {} }
     }
 }

@@ -8,6 +8,8 @@ use crate::{Config, Error, Host, NutError};
 mod client;
 mod stream;
 
+pub use client::Client;
+
 /// A blocking NUT client connection.
 pub enum Connection {
     /// A TCP connection.

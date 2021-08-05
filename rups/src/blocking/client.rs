@@ -8,7 +8,7 @@ pub struct Client {
     /// The client configuration.
     config: Config,
     /// The client connection.
-    stream: ConnectionStream,
+    pub(crate) stream: ConnectionStream,
 }
 
 impl Client {
@@ -30,22 +30,31 @@ impl Client {
 
         client = client.enable_ssl()?;
 
-        // TODO: Enable SSL
-        // TODO: Login
         Ok(client)
+    }
+
+    /// Authenticates to the given UPS device with the username and password set in the config.
+    pub fn login(&mut self, ups_name: String) -> crate::Result<()> {
+        if let Some(auth) = self.config.auth.clone() {
+            // Pass username and check for 'OK'
+            self.set_username(auth.username)?;
+
+            // Pass password and check for 'OK'
+            if let Some(password) = auth.password {
+                self.set_password(password)?;
+            }
+
+            // Submit login
+            self.exec_login(ups_name)
+        } else {
+            Ok(())
+        }
     }
 
     #[cfg(feature = "ssl")]
     fn enable_ssl(mut self) -> crate::Result<Self> {
         if self.config.ssl {
-            // Send STARTTLS
-            self.stream
-                .write_sentence(&ServerSentences::ExecStartTLS {})?;
-
-            // Expect the OK
-            self.stream
-                .read_sentence::<ClientSentences>()?
-                .exactly(ClientSentences::StartTLSOk {})?;
+            self.exec_start_tls()?;
 
             // Initialize SSL configurations
             let mut ssl_config = rustls::ClientConfig::new();
