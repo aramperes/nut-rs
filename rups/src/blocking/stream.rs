@@ -15,6 +15,11 @@ pub enum ConnectionStream {
     /// It can then be un-wrapped with `.unbuffered()`.
     Buffered(Box<BufReader<ConnectionStream>>),
 
+    /// A stream wrapped with a debug logging mechanism.
+    ///
+    /// Use `.debug()` to wrap any stream with this wrapper.
+    Debug(Box<ConnectionStream>),
+
     /// A client stream wrapped with SSL using `rustls`.
     #[cfg(feature = "ssl")]
     SslClient(Box<rustls::StreamOwned<rustls::ClientSession, ConnectionStream>>),
@@ -129,7 +134,7 @@ impl ConnectionStream {
     }
 
     /// Wraps the current stream with a `BufReader`.
-    pub fn buffered(self) -> ConnectionStream {
+    pub fn buffered(self) -> Self {
         Self::Buffered(Box::new(BufReader::new(self)))
     }
 
@@ -137,12 +142,17 @@ impl ConnectionStream {
     /// If the current stream is not buffered, it returns itself (no-op).
     ///
     /// Note that, if the stream is buffered, any un-consumed data will be discarded.
-    pub fn unbuffered(self) -> ConnectionStream {
+    pub fn unbuffered(self) -> Self {
         if let Self::Buffered(buf) = self {
             buf.into_inner()
         } else {
             self
         }
+    }
+
+    /// Wraps the current stream with a debug logging mechanism.
+    pub fn debug(self) -> Self {
+        Self::Debug(Box::new(self))
     }
 }
 
@@ -151,6 +161,11 @@ impl Read for ConnectionStream {
         match self {
             Self::Tcp(stream) => stream.read(buf),
             Self::Buffered(reader) => reader.read(buf),
+            Self::Debug(stream) => {
+                let str = String::from_utf8_lossy(buf).trim().to_string();
+                println!("DEBUG::READ <- '{}'", str); // TODO: Replace with logger?
+                stream.read(buf)
+            }
             #[cfg(feature = "ssl")]
             Self::SslClient(stream) => stream.read(buf),
             #[cfg(feature = "ssl")]
@@ -184,6 +199,11 @@ impl Write for ConnectionStream {
         match self {
             Self::Tcp(stream) => stream.write(buf),
             Self::Buffered(reader) => reader.get_mut().write(buf),
+            Self::Debug(stream) => {
+                let str = String::from_utf8_lossy(buf).trim().to_string();
+                println!("DEBUG::WRITE -> '{}'", str); // TODO: Replace with logger?
+                stream.write(buf)
+            }
             #[cfg(feature = "ssl")]
             Self::SslClient(stream) => stream.write(buf),
             #[cfg(feature = "ssl")]
@@ -201,6 +221,7 @@ impl Write for ConnectionStream {
         match self {
             Self::Tcp(stream) => stream.flush(),
             Self::Buffered(reader) => reader.get_mut().flush(),
+            Self::Debug(stream) => stream.flush(),
             #[cfg(feature = "ssl")]
             Self::SslClient(stream) => stream.flush(),
             #[cfg(feature = "ssl")]

@@ -24,8 +24,14 @@ impl Client {
         let tcp_stream = TcpStream::connect_timeout(&host.addr, config.timeout)?;
         let mut client = Client {
             config: config.clone(),
-            stream: ConnectionStream::Tcp(tcp_stream).buffered(),
+            stream: ConnectionStream::Tcp(tcp_stream),
         };
+
+        if config.debug {
+            client.stream = client.stream.debug();
+        }
+
+        client.stream = client.stream.buffered();
 
         client = client.enable_ssl()?;
 
