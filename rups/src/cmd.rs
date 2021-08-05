@@ -721,6 +721,25 @@ macro_rules! implement_client_action_commands {
                 }
             )*
         }
+
+        #[cfg(feature = "async")]
+        impl crate::tokio::Client {
+            $(
+                $(#[$attr])*
+                #[allow(dead_code)]
+                $vis async fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<()> {
+                    use crate::proto::{Sentence, ClientSentences, ClientSentences::*, ServerSentences::*};
+                    self.stream
+                        .write_sentence(&$cmd)
+                        .await?;
+                    self.stream
+                        .read_sentence::<ClientSentences>()
+                        .await?
+                        .exactly($ret)
+                        .map(|_| ())
+                }
+            )*
+        }
     };
 }
 

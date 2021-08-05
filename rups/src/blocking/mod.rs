@@ -10,6 +10,7 @@ mod stream;
 
 pub use client::Client;
 
+// TODO: Remove me
 /// A blocking NUT client connection.
 pub enum Connection {
     /// A TCP connection.

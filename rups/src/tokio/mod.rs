@@ -6,8 +6,14 @@ use crate::{Config, Error, Host, NutError};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::TcpStream;
 
+mod client;
+#[cfg(test)]
+mod mockstream;
 mod stream;
 
+pub use client::Client;
+
+// TODO: Remove me
 /// An async NUT client connection.
 pub enum Connection {
     /// A TCP connection.
