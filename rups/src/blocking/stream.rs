@@ -9,6 +9,12 @@ pub enum ConnectionStream {
     /// A plain TCP stream.
     Tcp(TcpStream),
 
+    /// A stream wrapped with `BufReader`.
+    ///
+    /// Use `.buffered()` to wrap any stream with `BufReader`.
+    /// It can then be un-wrapped with `.unbuffered()`.
+    Buffered(Box<BufReader<ConnectionStream>>),
+
     /// A client stream wrapped with SSL using `rustls`.
     #[cfg(feature = "ssl")]
     SslClient(Box<rustls::StreamOwned<rustls::ClientSession, ConnectionStream>>),
@@ -16,12 +22,6 @@ pub enum ConnectionStream {
     /// A server stream wrapped with SSL using `rustls`.
     #[cfg(feature = "ssl")]
     SslServer(Box<rustls::StreamOwned<rustls::ServerSession, ConnectionStream>>),
-
-    /// A stream wrapped with `BufReader`.
-    ///
-    /// Use `.buffered()` to wrap any stream with `BufReader`.
-    /// It can then be un-wrapped with `.unbuffered()`.
-    Buffered(Box<BufReader<ConnectionStream>>),
 
     /// A mock stream, used for testing.
     #[cfg(test)]

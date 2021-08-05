@@ -60,7 +60,7 @@ impl TcpConnection {
         let tcp_stream = TcpStream::connect(socket_addr).await?;
         let mut connection = Self {
             config,
-            stream: ConnectionStream::Plain(tcp_stream),
+            stream: ConnectionStream::Tcp(tcp_stream),
         };
         connection = connection.enable_ssl().await?;
         Ok(connection)
