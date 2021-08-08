@@ -107,4 +107,10 @@ impl Client {
     fn enable_ssl(self) -> crate::Result<Self> {
         Ok(self)
     }
+
+    /// Gracefully closes the connection.
+    pub fn close(mut self) -> crate::Result<()> {
+        self.exec_logout()?;
+        Ok(())
+    }
 }

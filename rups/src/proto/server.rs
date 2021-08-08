@@ -481,7 +481,7 @@ mod tests {
             Sentences::QueryHelp {}
         );
         test_encode_decode!(
-            ["VERSION"] <=>
+            ["VER"] <=>
             Sentences::QueryVersion {}
         );
         test_encode_decode!(

@@ -743,6 +743,132 @@ macro_rules! implement_client_action_commands {
     };
 }
 
+/// A macro for implementing client action commands that return a string.
+///
+/// Each function should return the sentence to pass.
+macro_rules! implement_client_simple_commands {
+    (
+        $(
+            $(#[$attr:meta])+
+            $vis:vis fn $name:ident($($argname:ident: $argty:ty),*) -> String {
+                $cmd:block
+            }
+        )*
+    ) => {
+        impl crate::blocking::Client {
+            $(
+                $(#[$attr])*
+                #[allow(dead_code)]
+                $vis fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<String> {
+                    use crate::proto::{Sentence, ServerSentences::*};
+                    self.stream
+                        .write_sentence(&$cmd)?;
+                    self.stream
+                        .read_literal()
+                        .map(|s| String::from(s.trim_end_matches('\n')))
+                }
+            )*
+        }
+
+        #[cfg(feature = "async")]
+        impl crate::tokio::Client {
+            $(
+                $(#[$attr])*
+                #[allow(dead_code)]
+                $vis async fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<String> {
+                    use crate::proto::{Sentence, ServerSentences::*};
+                    self.stream
+                        .write_sentence(&$cmd)
+                        .await?;
+                    self.stream
+                        .read_literal()
+                        .await
+                        .map(|s| String::from(s.trim_end_matches('\n')))
+                }
+            )*
+        }
+    };
+}
+
+/// A macro for implementing client action commands that return a list of objects.
+///
+/// Each function should return:
+/// 1. The sentence to execute the query
+/// 2. The expected 'BEGIN' sentence
+/// 3. The expected return sentence
+/// 4. The mapper for individual items
+/// 5. The expected 'END' sentence
+macro_rules! implement_client_list_commands {
+    (
+        $(
+            $(#[$attr:meta])+
+            $vis:vis fn $name:ident($($argname:ident: $argty:ty),*) -> $ret:ty {
+                $cmd:expr,
+                $begin:pat_param,
+                $itemsentence:pat_param,
+                $mapper:block,
+                $end:pat_param
+            }
+        )*
+    ) => {
+        impl crate::blocking::Client {
+            $(
+                $(#[$attr])*
+                #[allow(dead_code)]
+                $vis fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$ret> {
+                    use crate::proto::{Sentence, ClientSentences, ClientSentences::*, ServerSentences::*};
+                    self.stream
+                        .write_sentence(&$cmd)?;
+                    self.stream
+                        .read_sentence::<ClientSentences>()?
+                        .matching(|s| matches!(s, $begin))?;
+                    let sentences: Vec<ClientSentences> = self.stream
+                        .read_sentences_until(|s| matches!(s, $end))?;
+                    sentences
+                        .into_iter()
+                        .map(|s| {
+                            match s {
+                                $itemsentence => Ok($mapper),
+                                _ => Err(crate::Error::Nut(crate::NutError::UnexpectedResponse)),
+                            }
+                        })
+                        .collect()
+                }
+            )*
+        }
+
+        #[cfg(feature = "async")]
+        impl crate::tokio::Client {
+            $(
+                $(#[$attr])*
+                #[allow(dead_code)]
+                $vis async fn $name(&mut self$(, $argname: $argty)*) -> crate::Result<$ret> {
+                    use crate::proto::{Sentence, ClientSentences, ClientSentences::*, ServerSentences::*};
+                    self.stream
+                        .write_sentence(&$cmd)
+                        .await?;
+                    self.stream
+                        .read_sentence::<ClientSentences>()
+                        .await?
+                        .matching(|s| matches!(s, $begin))?;
+                    let sentences: Vec<ClientSentences> = self.stream
+                        .read_sentences_until(|s| matches!(s, $end))
+                        .await?;
+                    sentences
+                        .into_iter()
+                        .map(|s| {
+                            match s {
+                                $itemsentence => Ok($mapper),
+                                _ => Err(crate::Error::Nut(crate::NutError::UnexpectedResponse)),
+                            }
+                        })
+                        .collect()
+                }
+            )*
+        }
+    };
+}
+
 implement_list_commands! {
     /// Queries a list of UPS devices.
     pub fn list_ups() -> Vec<(String, String)> {
@@ -915,5 +1041,28 @@ implement_client_action_commands! {
     pub(crate) fn exec_start_tls() {
         { ExecStartTLS {} },
         { StartTLSOk {} }
+    }
+}
+
+implement_client_simple_commands! {
+    /// Queries the network protocol version.
+    pub fn get_network_version() -> String {
+        { QueryNetworkVersion {} }
+    }
+
+    /// Queries the server NUT version.
+    pub fn get_server_version() -> String {
+        { QueryVersion {} }
+    }
+}
+
+implement_client_list_commands! {
+    /// Queries the network protocol version.
+    pub fn list_ups() -> Vec<(String, String)> {
+        QueryListUps {},
+        BeginListUps {},
+        RespondUps {ups_name, description},
+        { (ups_name, description) },
+        EndListUps {}
     }
 }

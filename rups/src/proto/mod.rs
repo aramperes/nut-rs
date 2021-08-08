@@ -328,7 +328,7 @@ impl_words! {
     /// Represents a variable.
     Var("VAR"),
     /// Client requests the server version.
-    Version("VERSION"),
+    Version("VER"),
 }
 
 use crate::{Error, NutError};
