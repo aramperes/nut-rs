@@ -5,7 +5,7 @@ use std::time::Duration;
 
 /// Well-known variable keys for NUT UPS devices.
 ///
-/// List retrieved from: https://networkupstools.org/docs/user-manual.chunked/apcs01.html
+/// List retrieved from: <https://networkupstools.org/docs/user-manual.chunked/apcs01.html>
 pub mod key {
     /// Device model.
     pub const DEVICE_MODEL: &str = "device.model";
@@ -31,7 +31,7 @@ pub mod key {
 
 /// Well-known variables for NUT UPS devices.
 ///
-/// List retrieved from: https://networkupstools.org/docs/user-manual.chunked/apcs01.html
+/// List retrieved from: <https://networkupstools.org/docs/user-manual.chunked/apcs01.html>
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Variable {
     /// Device model.
@@ -196,10 +196,8 @@ impl TryFrom<&str> for VariableType {
             other => {
                 if other.starts_with("STRING:") {
                     let size = other
-                        .splitn(2, ':')
-                        .nth(1)
-                        .map(|s| s.parse().ok())
-                        .flatten()
+                        .split_once(':')
+                        .and_then(|(_, s)| s.parse().ok())
                         .ok_or_else(|| crate::ClientError::generic("Invalid STRING definition"))?;
                     Ok(Self::String(size))
                 } else {

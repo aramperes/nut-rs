@@ -213,6 +213,9 @@ macro_rules! impl_sentences {
 /// 2. the decoded sentence
 ///
 /// ```
+/// # #[macro_use] extern crate rups;
+/// # fn main() {
+/// # #[cfg(test)]
 ///  test_encode_decode!(
 ///      ["GET", "VAR", "nutdev", "test.var"] <=>
 ///      Sentences::QueryVar {
@@ -220,6 +223,7 @@ macro_rules! impl_sentences {
 ///          var_name: "test.var".into(),
 ///      }
 ///  );
+/// # }
 /// ```
 #[allow(unused_macros)]
 macro_rules! test_encode_decode {

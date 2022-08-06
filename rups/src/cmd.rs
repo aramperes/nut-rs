@@ -833,7 +833,7 @@ implement_simple_commands! {
     pub fn get_network_version() -> String {
         (
             { Command::NetworkVersion },
-            { |row: String| Ok(row) },
+            { Ok },
         )
     }
 
@@ -841,7 +841,7 @@ implement_simple_commands! {
     pub fn get_server_version() -> String {
         (
             { Command::Version },
-            { |row: String| Ok(row) },
+            { Ok },
         )
     }
 }
