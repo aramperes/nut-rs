@@ -26,6 +26,7 @@ default = []
 ssl = ["rustls", "rustls/dangerous_configuration", "webpki", "webpki-roots"]
 async = ["tokio"]
 async-ssl = ["async", "tokio-rustls", "ssl"]
+write = []
 # a feature gate for examples
 async-rt = ["async", "tokio/rt-multi-thread", "tokio/macros"]
 
