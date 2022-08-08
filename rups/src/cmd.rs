@@ -18,6 +18,9 @@ pub enum Command<'a> {
     NetworkVersion,
     /// Queries the server version.
     Version,
+    #[cfg(feature = "write")]
+    /// Run a command. Allow for on additional optional param.
+    Run(&'a str, Option<&'a str>),
     /// Gracefully shuts down the connection.
     Logout,
 }
@@ -33,6 +36,8 @@ impl<'a> Command<'a> {
             Self::StartTLS => "STARTTLS",
             Self::NetworkVersion => "NETVER",
             Self::Version => "VER",
+            #[cfg(feature = "write")]
+            Self::Run(_, _) => "INSTCMD",
             Self::Logout => "LOGOUT",
         }
     }
@@ -44,6 +49,10 @@ impl<'a> Command<'a> {
             Self::SetUsername(username) => vec![username],
             Self::SetPassword(password) => vec![password],
             Self::List(query) => query.to_vec(),
+            #[cfg(feature = "write")]
+            Self::Run(cmd, param) => param
+                .map(|param| vec![*cmd, param])
+                .unwrap_or_else(|| vec![cmd]),
             _ => Vec::new(),
         }
     }
@@ -826,7 +835,7 @@ implement_simple_commands! {
     pub fn get_network_version() -> String {
         (
             { Command::NetworkVersion },
-            { |row: String| Ok(row) },
+            { Ok },
         )
     }
 
@@ -834,7 +843,7 @@ implement_simple_commands! {
     pub fn get_server_version() -> String {
         (
             { Command::Version },
-            { |row: String| Ok(row) },
+            { Ok },
         )
     }
 }
@@ -853,5 +862,33 @@ implement_action_commands! {
     /// Gracefully shuts down the connection.
     pub(crate) fn logout() {
         Command::Logout
+    }
+}
+
+#[cfg(feature = "write")]
+impl crate::blocking::Connection {
+    /// Runs a command on the UPS.
+    pub fn run_command(&mut self, cmd: &str, param: Option<&str>) -> crate::Result<()> {
+        match self {
+            Self::Tcp(conn) => {
+                conn.write_cmd(Command::Run(cmd, param))?;
+                conn.read_response()?.expect_ok()?;
+                Ok(())
+            }
+        }
+    }
+}
+
+#[cfg(all(feature = "write", feature = "async"))]
+impl crate::tokio::Connection {
+    /// Runs a command on the UPS.
+    pub async fn run_command(&mut self, cmd: &str, param: Option<&str>) -> crate::Result<()> {
+        match self {
+            Self::Tcp(conn) => {
+                conn.write_cmd(Command::Run(cmd, param)).await?;
+                conn.read_response().await?.expect_ok()?;
+                Ok(())
+            }
+        }
     }
 }
