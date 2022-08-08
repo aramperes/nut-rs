@@ -51,7 +51,7 @@ impl<'a> Command<'a> {
             Self::List(query) => query.to_vec(),
             #[cfg(feature = "write")]
             Self::Run(cmd, param) => param
-                .map(|param| vec![cmd, param])
+                .map(|param| vec![*cmd, param])
                 .unwrap_or_else(|| vec![cmd]),
             _ => Vec::new(),
         }
