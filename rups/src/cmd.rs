@@ -50,7 +50,9 @@ impl<'a> Command<'a> {
             Self::SetPassword(password) => vec![password],
             Self::List(query) => query.to_vec(),
             #[cfg(feature = "write")]
-            Self::Run(cmd, param) => vec![cmd, param.unwrap_or("")],
+            Self::Run(cmd, param) => param
+                .map(|param| vec![cmd, param])
+                .unwrap_or_else(|| vec![cmd]),
             _ => Vec::new(),
         }
     }
