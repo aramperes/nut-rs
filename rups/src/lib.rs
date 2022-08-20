@@ -17,7 +17,7 @@ pub mod blocking;
 /// Reference: <https://networkupstools.org/docs/developer-guide.chunked/ar01s09.html>
 #[allow(dead_code)]
 #[macro_use]
-pub mod proto;
+pub(crate) mod proto;
 /// Async client implementation for NUT, using Tokio.
 #[cfg(feature = "async")]
 pub mod tokio;
