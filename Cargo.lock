@@ -218,7 +218,7 @@ dependencies = [
 
 [[package]]
 name = "rups"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "rustls",
  "shell-words",
@@ -230,7 +230,7 @@ dependencies = [
 
 [[package]]
 name = "rupsc"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "anyhow",
  "clap",

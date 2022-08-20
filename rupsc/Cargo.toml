@@ -1,6 +1,6 @@
 [package]
 name = "rupsc"
-version = "0.5.2"
+version = "0.5.3"
 authors = ["Aram Peres <aram.peres@wavy.fm>"]
 edition = "2018"
 description = "A demo program to display UPS variables"
