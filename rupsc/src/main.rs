@@ -1,8 +1,8 @@
-///! # rupsc
-///! A demo program to display UPS variables.
-///! This a Rust clone of [upsc](https://github.com/networkupstools/nut/blob/master/clients/upsc.c).
-///!
-///! P.S.: pronounced "r-oopsie".
+//! # rupsc
+//! A demo program to display UPS variables.
+//! This a Rust clone of [upsc](https://github.com/networkupstools/nut/blob/master/clients/upsc.c).
+//!
+//! P.S.: pronounced "r-oopsie".
 use core::convert::TryInto;
 
 use anyhow::Context;
