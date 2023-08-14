@@ -138,7 +138,7 @@ impl TcpConnection {
         if debug {
             eprint!("DEBUG <- {}", raw);
         }
-        raw = raw[..raw.len() - 1].to_string(); // Strip off \n
+        raw = raw.trim_end_matches('\n').to_string(); // Strip off \n
 
         // Parse args by splitting whitespace, minding quotes for args with multiple words
         let args = shell_words::split(&raw)
