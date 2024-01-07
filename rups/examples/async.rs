@@ -9,8 +9,7 @@ async fn main() -> rups::Result<()> {
     let host = env::var("NUT_HOST").unwrap_or_else(|_| "localhost".into());
     let port = env::var("NUT_PORT")
         .ok()
-        .map(|s| s.parse::<u16>().ok())
-        .flatten()
+        .and_then(|s| s.parse::<u16>().ok())
         .unwrap_or(3493);
 
     let username = env::var("NUT_USER").ok();
